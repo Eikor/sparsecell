@@ -1,13 +1,21 @@
 from torch.utils.data import Dataset
 import torch
+import numpy as np
+import json
 
 class genericDataset(Dataset):
-    def __init__(self) -> None:
+    def __init__(self, image_url, annotation_url, args) -> None:
         super().__init__()
-        self.images = None
-        self.labels = None
-        self.annotations = None
-
+        print('load images')
+        self.images = np.load(image_url)
+        print('Done.')
+        # detection annotation: wights, i, j, h, w
+        # segmentation annotation: [x1, y1, x2, y2, ...] 
+        f = open(annotation_url, 'r')
+        print('load annotations')
+        self.annotations = json.load(f)
+        print('Done.')
+    
     def __len__(self):
         return len(self.images) 
 

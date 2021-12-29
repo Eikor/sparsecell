@@ -1,17 +1,23 @@
 import numpy as np
-from utils import point_process
+from dataset.utils import point_process
 from dataset.dataset import genericDataset as Dataset
 import torch
 
+'''
+Detection Dataset:
+    images: n*c*H*W
+    annotations: n*2000*3 [weights, i, j]
+'''
+
 class point(Dataset):
     def __init__(self, image_url, annotation_url, args) -> None:
-        super().__init__()
-        self.images = np.load(image_url)
-        self.annotations = np.load(annotation_url)
+        super().__init__(image_url, annotation_url, args)
+        self.annotations = np.array(self.annotations['detection'])[:, [0, 2, 1]]
         self.labels = self.annotation_to_label(self.annotations)
         self.sigma = 3
         self.input_size = args.input_size
         self.num_classes = args.num_classes
+        self.thresh = 10
 
     
     def annotation_to_label(self, annotations):
@@ -36,7 +42,10 @@ class point(Dataset):
         '''
         annotations = []
         for label in labels:
-            annotation = point_process.get_centers(label)
+            annotation = np.zeros((2000, 3))
+            ij = point_process.get_centers(label)
+            annotation[:len(ij), 1:] = ij
+            annotation[:len(ij), 0] = label[annotation]
             annotations.append(annotation)
         return np.array(annotations)
 
@@ -46,6 +55,16 @@ class point(Dataset):
             prediction: array with shape n*1*H*W 
         '''
         self.annotations = self.label_to_annotation(prediction)
+    
+    def metric(self, prediction):
+        '''
+        input:
+            prediction: array with shape n*1*H*W
+        output：
+
+        '''
+        pred = self.label_to_annotation(prediction)
+        return point_process.metric(pred, self.annotations, self.thresh)
 
 
     def __getitem__(self, index):
@@ -56,3 +75,10 @@ class point(Dataset):
             'image': torch.FloatTensor(image),
             'label': torch.FloatTensor(label)
         }     
+
+
+
+if __name__ == '__main__':
+    from ..args import describe
+    args = describe()
+    val_set = point('dataset/data/livecell/val/val_images.npy', 'dataset/data/livecell/val/val_annotation.json')

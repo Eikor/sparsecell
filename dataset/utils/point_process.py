@@ -42,11 +42,13 @@ def getcellmap(frame, zeros, gaussian_map):
 
 def get_centers(label, pred_th):
     '''
-    label: 1*H*W
+    input:
+        label: 1*H*W
+    
     '''
     th = pred_th
-    anno = peak_local_max(label, min_distance=5, threshold_abs=th)[:, ::-1]
-    return anno
+    ij = peak_local_max(label, min_distance=5, threshold_abs=th)[:, ::-1]
+    return ij
 
 def crop(crop_size, img, label):
     if crop_size < 0:
@@ -62,3 +64,38 @@ def crop(crop_size, img, label):
     img_patch, label_patch = img[:, tl[0]:br[0], tl[1]:br[1]], label[:, tl[0]:br[0], tl[1]:br[1]]
     
     return img_patch, label_patch
+
+def compare_(pred, anno, patience):
+    if len(pred) == 0:
+        return 0, 0, 0
+    anno = anno[anno[:, 0]>0]
+    pred = pred[pred[:, 0]>0]
+    error = anno[:, np.newaxis, :] - pred[np.newaxis, :, :]
+    error = np.linalg.norm(error, axis=-1)
+  
+    pred_error = np.min(error, axis=0) # find closest cell of each prediction 
+    association = np.argmin(error, axis=0) 
+    association_error = np.min(error, axis=1)
+    association_error = association_error[association_error <= patience]
+    # each prediction only has one valid associatin target 
+    TP = min(np.sum(pred_error <= patience), len(np.unique(association)))
+    
+    precision = TP / len(pred)
+    recall = TP / len(anno)
+    if len(association_error) == 0:
+        return 0, 0, 0
+    return precision, recall, np.mean(association_error)
+
+
+def metric(preds, annos, thresh):
+    '''
+    input:
+        preds: numpy array with shape n*2000*3
+        annos: numpy array with shape n*2000*3
+    '''
+    assert len(preds) == len(annos)
+    stat = []
+    for pred, anno in zip(preds, annos): # for each image
+        precision, recall, error = compare_(pred, anno, thresh)
+        stat.append(np.array([precision, recall, error]))
+    return stat
