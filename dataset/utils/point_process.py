@@ -9,7 +9,6 @@ def getgaussianmap(mag, sigma):
     canvas = canvas / np.max(canvas)
     return canvas
 
-
 def getcellmap(frame, zeros, gaussian_map):
     '''
     frame: 2000*3 
@@ -50,20 +49,6 @@ def get_centers(label, pred_th):
     ij = peak_local_max(label, min_distance=5, threshold_abs=th)[:, ::-1]
     return ij
 
-def crop(crop_size, img, label):
-    if crop_size < 0:
-        return img, label
-    
-    h, w = img.shape[1:3]        
-    # random crop images
-    tl = np.array([np.random.randint(0, h-crop_size),
-                np.random.randint(0, w-crop_size)])
-    br = tl + crop_size
-
-    ### crop image ###
-    img_patch, label_patch = img[:, tl[0]:br[0], tl[1]:br[1]], label[:, tl[0]:br[0], tl[1]:br[1]]
-    
-    return img_patch, label_patch
 
 def compare_(pred, anno, patience):
     if len(pred) == 0:

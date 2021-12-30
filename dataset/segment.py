@@ -2,6 +2,7 @@ import numpy as np
 from dataset.utils import pose_process
 from dataset.dataset import genericDataset as Dataset
 import torch
+import cv2
 
 '''
 Segmentation Dataset:
@@ -12,47 +13,79 @@ Segmentation Dataset:
 class Pose(Dataset):
     def __init__(self, image_url, annotation_url, args) -> None:
         super().__init__(image_url, annotation_url, args)
-        self.annotations = np.array(self.annotations['segmentation'])[:, [0, 2, 1]]
+        segmentation = self.annotations['segmentation']
+        self.annotations = segmentation
         self.labels = self.annotation_to_label(self.annotations)
         self.sigma = 3
         self.input_size = args.input_size
         self.num_classes = args.num_classes
-        self.thresh = 10
+        self.cellprob_thresh = 0.5
+        self.flow_threshold = 0.5
 
-    
     def annotation_to_label(self, annotations):
         """
-        annotations: n*2000*3
+        input:
+            annotations: [
+                image_1: [[cell1], [cell2], ...]
+                image_2: ...
+                ... 
+            ]
         output:
-            labels: n*1*H*W
+            label: array with shape n*3*H*W
+                [
+                    image_1: [cell_prob, dy, dx]
+                    image_2: ...
+                    ...
+                ]
         """
-        zeros = np.zeros((self.images[0].shape[1:]))
         labels = []
-        for annotation in annotations:        
-            label = point_process.getcellmap(annotation, zeros)[None, :, :]
-            labels.append(label)
+        # build mask
+        masks = []
+        mask = np.zeros_like(self.images[0])
+        for image in annotations:
+            for i in range(len(image)):
+                contours = np.around(np.array(image[i])).astype(int).reshape(-1, 2)
+                mask = cv2.fillPoly(mask, [contours], i+1)
+            masks.append(mask)
+        # compute flow
+        for mask in masks:
+            flow, _ = pose_process.masks_to_flows(mask)
+            labels.append(flow)
+
         return np.array(labels)
 
     def label_to_annotation(self, labels):
         '''
         input:
-            label: array with shape n*1*H*W
+            label: array with shape n*3*H*W
+                [
+                    image_1: [cell_prob, dy, dx]
+                    image_2: ...
+                    ...
+                ]
         output:
-            annotation: n*2000*3
+            annotations: [
+                image_1: [[cell1], [cell2], ...]
+                image_2: ...
+                ... 
+            ]
         '''
         annotations = []
         for label in labels:
-            annotation = np.zeros((2000, 3))
-            ij = point_process.get_centers(label)
-            annotation[:len(ij), 1:] = ij
-            annotation[:len(ij), 0] = label[annotation]
+            annotation = []
+            cell_prob = label[0] > self.cellprob_thresh
+            dP = label[1:]
+            p = pose_process.follow_flows(-dP * (cell_prob)/5., niter=200)
+            maski = pose_process.get_masks(p, iscell=(cell_prob),flows=dP, threshold=self.flow_threshold)
+            maski = pose_process.fill_holes_and_remove_small_masks(maski)
+
             annotations.append(annotation)
-        return np.array(annotations)
+        return annotations
 
     def update_annotation(self, prediction):
         '''
         input:
-            prediction: array with shape n*1*H*W 
+            prediction: array with shape n*3*H*W 
         '''
         self.annotations = self.label_to_annotation(prediction)
     
@@ -64,15 +97,13 @@ class Pose(Dataset):
 
         '''
         pred = self.label_to_annotation(prediction)
-        return point_process.metric(pred, self.annotations, self.thresh)
+        return pose_process.metric(pred, self.annotations, self.thresh)
 
 
     def __getitem__(self, index):
         batch = super().__getitem__(index)
-        image, label = point_process.crop(self.input_size, batch['image'], batch['label'])
-        
         return {
-            'image': torch.FloatTensor(image),
-            'label': torch.FloatTensor(label)
+            'image': torch.FloatTensor(batch['image']),
+            'label': torch.FloatTensor(batch['label'])
         }     
 

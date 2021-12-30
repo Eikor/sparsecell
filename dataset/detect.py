@@ -15,7 +15,6 @@ class point(Dataset):
         self.annotations = np.array(self.annotations['detection'])[:, [0, 2, 1]]
         self.labels = self.annotation_to_label(self.annotations)
         self.sigma = 3
-        self.input_size = args.input_size
         self.num_classes = args.num_classes
         self.thresh = 10
 
@@ -28,8 +27,9 @@ class point(Dataset):
         """
         zeros = np.zeros((self.images[0].shape[1:]))
         labels = []
+        gaussianmap = point_process.getgaussianmap(1, self.sigma)
         for annotation in annotations:        
-            label = point_process.getcellmap(annotation, zeros)[None, :, :]
+            label = point_process.getcellmap(annotation, zeros, gaussianmap)[None, :, :]
             labels.append(label)
         return np.array(labels)
 
@@ -69,11 +69,9 @@ class point(Dataset):
 
     def __getitem__(self, index):
         batch = super().__getitem__(index)
-        image, label = point_process.crop(self.input_size, batch['image'], batch['label'])
-        
         return {
-            'image': torch.FloatTensor(image),
-            'label': torch.FloatTensor(label)
+            'image': torch.FloatTensor(batch['image']),
+            'label': torch.FloatTensor(batch['label'])
         }     
 
 

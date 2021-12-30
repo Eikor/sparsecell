@@ -195,7 +195,7 @@ def labels_to_flows(labels, files=None):
         labels = [labels[n][np.newaxis,:,:] for n in range(nimg)]
 
     if labels[0].shape[0] == 1 or labels[0].ndim < 3:
-        print('NOTE: computing flows for labels (could be done before to save time)')
+        print('NOTE: computing flows for annotations (could be done before to save time)')
         # compute flows        
         veci = [masks_to_flows(labels[n][0])[0] for n in trange(nimg)]
         # concatenate flows with cell probability
@@ -507,10 +507,13 @@ def get_masks(p, iscell=None, rpad=20, flows=None, threshold=0.4):
         M0[M0==i] = 0
     _,M0 = np.unique(M0, return_inverse=True)
     M0 = np.reshape(M0, shape0)
-
+ 
     if threshold is not None and threshold > 0 and flows is not None:
         M0 = remove_bad_flow_masks(M0, flows, threshold=threshold)
         _,M0 = np.unique(M0, return_inverse=True)
         M0 = np.reshape(M0, shape0).astype(np.int32)
 
     return M0
+
+def mertric():
+    pass 
