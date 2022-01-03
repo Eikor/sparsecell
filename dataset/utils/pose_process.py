@@ -1,3 +1,4 @@
+from numpy.lib.arraysetops import unique
 from scipy.ndimage.filters import maximum_filter1d
 import scipy.ndimage
 import numpy as np
@@ -515,5 +516,20 @@ def get_masks(p, iscell=None, rpad=20, flows=None, threshold=0.4):
 
     return M0
 
-def mertric():
-    pass 
+def mertric(preds:np.ndarray, gt:np.ndarray, thresh):
+    '''
+    Input: 
+        preds: n*H*W [mask1, mask2, ...]
+        gt:n*H*W
+    '''
+    preds = preds.squeeze()
+    gt = gt.squeeze()
+    stats = []
+    for pred, true in zip(preds, gt):
+        ious, assign = mask_ious(true, pred)
+        tp = np.sum(ious>thresh)
+        precision = tp / np.len(np.unique(pred))
+        recall = tp / np.len(np.unique(gt))
+        mean_error = np.mean(ious[ious>thresh])
+        stats.append([precision, recall, mean_error])
+    return stats

@@ -12,9 +12,8 @@ class genericDataset(Dataset):
         print('Done.')
         # detection annotation: wights, i, j, h, w
         # segmentation annotation: [x1, y1, x2, y2, ...] 
-        f = open(annotation_url, 'r')
         print('load annotations')
-        self.annotations = json.load(f)
+        self.annotations = np.load(annotation_url)
         print('Done.')
     
     def __len__(self):
@@ -50,7 +49,7 @@ class genericDataset(Dataset):
     def __getitem__(self, index):
         image = self.images[index]
         label = self.labels[index]
-        image, label = self.crop(image, label, self.CROP_SIZE)
+        image, label = self.crop(self.CROP_SIZE, image, label)
         return {
             'image': image, # C*H*W
             'label': label # C*H*W

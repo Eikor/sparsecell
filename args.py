@@ -1,47 +1,30 @@
 import argparse
 import time
+import os
 
 def parse():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--data_mode', type=str, default='train')
     # training
-    parser.add_argument('--pre_train', type=bool, default=False)
-    parser.add_argument('--epochs', type=int, default=1000, help='epochs for training')
+    parser.add_argument('--epochs', type=int, default=200, help='epochs for training')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for main task')
     parser.add_argument('--batch_size', type=int, default=8, help='batch size for training')
-    parser.add_argument('--verbose_img', type=str, default=None)
-    parser.add_argument('--e1', type=float, default=5)
-    parser.add_argument('--e2', type=float, default=5)
+    parser.add_argument('--verbose', type=bool, default=True)
     parser.add_argument('--iter', type=int, default=20)
-    parser.add_argument('--start_url', type=str, default=None)
     
     # net
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--num_classes', type=int, default=1)
-    
+    parser.add_argument('--pose_theta', type=float, default=5)
+
     # save dir
     parser.add_argument('--save_dir', type=str, default='./result', help='directory to save record file')
-    parser.add_argument('--comments', type=str, default='L2')
 
     # dataset
-    
-    parser.add_argument('--annotation_url', type=str, default='./annotations/train')
-    parser.add_argument('--train_image_url', type=str, default='./annotations/train')
-    parser.add_argument('--train_anno_url', type=str, default='./annotations/train_l')
-    parser.add_argument('--val_image_url', type=str, default='./annotations/train_r')
-    parser.add_argument('--val_anno_url', type=str, default='./annotations/test')
-    parser.add_argument('--test_url', type=str, default='./annotations/test')
-    parser.add_argument('--data_url', type=str, default='/home/siat/sdb/datasets/phc_c2c12/090318')
-    parser.add_argument('--fulltrain', action='store_true',)
-    parser.add_argument('--BEGIN_FRAME', type=int, default=600)
-    parser.add_argument('--END_FRAME', type=int, default=700)
-    parser.add_argument('--itv', type=int, default=5)
-    parser.add_argument('--sigma', type=int, default=1)
-    parser.add_argument('--rand_flip', action='store_true',)
-    parser.add_argument('--rand_crop', action='store_true')
-    parser.add_argument('--CROP_SIZE', type=int, default=400)
-    parser.add_argument('--resize_ratio', type=float, default=0.5)
-    parser.add_argument('--CROP_EDGE', type=int, default=20)
+    parser.add_argument('--dataset', type=str, default='livecell')
+    parser.add_argument('--data_mode', type=str, default='pose')
+    parser.add_argument('--anno_rate', type=float, default=0.1)
+    parser.add_argument('--crop_size', type=int, default=400)
+
     
     ### test args
     parser.add_argument('--pred_th', type=float, default=0.1)
@@ -51,10 +34,28 @@ def parse():
     return parser.parse_args()
 
 def get_args():
+    segmentation = ['pose']
+    detection = ['point']
     args = parse()
+    args.train_image_url = f'./dataset/data/{args.dataset}/train/train_images.npy'
+    args.train_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
+    args.test_image_url = f'./dataset/data/{args.dataset}/train/train_images.npy'
+    args.test_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
+    args.val_image_url = f'./dataset/data/{args.dataset}/val/val_images.npy'
+    args.val_anno_url = f'./dataset/data/{args.dataset}/val/val_annotation.npz'
+    if args.data_mode in segmentation:
+        print(f'using {args.data_mode} to segment {args.dataset}')
+    elif args.data_mode in detection:
+        print(f'using {args.data_mode} to detect {args.dataset}')
+    else:
+        pass
 
-    # args.comments = args.data_mode + args.train_url.split('/')[-1]
-    # args.comments = args.comments + '_' + time.strftime('%m-%d_%H:%M:%S',time.localtime(int(round(time.time()))))
+    args.save_dir = 'result/' + time.strftime('%m_%d_%H_%M_%S',time.localtime(int(round(time.time()))))
+    try:
+        os.makedirs(args.save_dir)
+        print(f'save experiment result in {args.save_dir}')
+    except:
+        pass
     return args
 
 def describe():

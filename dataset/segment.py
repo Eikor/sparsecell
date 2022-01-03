@@ -13,74 +13,68 @@ Segmentation Dataset:
 class Pose(Dataset):
     def __init__(self, image_url, annotation_url, args) -> None:
         super().__init__(image_url, annotation_url, args)
-        segmentation = self.annotations['segmentation']
-        self.annotations = segmentation
-        self.labels = self.annotation_to_label(self.annotations)
+        print('build pose dataset')
+        self.annotations = self.annotations['segmentation']
+        # self.labels = self.annotation_to_label(self.annotations)
         self.sigma = 3
-        self.input_size = args.input_size
         self.num_classes = args.num_classes
         self.cellprob_thresh = 0.5
         self.flow_threshold = 0.5
+        print('Done.')
 
     def annotation_to_label(self, annotations):
         """
         input:
-            annotations: [
-                image_1: [[cell1], [cell2], ...]
+            annotations: array with shape n*2*H*W
+            [
+                image_1: [cell_id, weight]
                 image_2: ...
                 ... 
             ]
         output:
-            label: array with shape n*3*H*W
+            label: array with shape n*4*H*W
                 [
-                    image_1: [cell_prob, dy, dx]
+                    image_1: [weights, cell_prob, dy, dx]
                     image_2: ...
                     ...
                 ]
         """
         labels = []
         # build mask
-        masks = []
-        mask = np.zeros_like(self.images[0])
-        for image in annotations:
-            for i in range(len(image)):
-                contours = np.around(np.array(image[i])).astype(int).reshape(-1, 2)
-                mask = cv2.fillPoly(mask, [contours], i+1)
-            masks.append(mask)
-        # compute flow
-        for mask in masks:
+        for annotation in annotations:
+            mask, weight = annotation[0], annotation[1]
             flow, _ = pose_process.masks_to_flows(mask)
-            labels.append(flow)
-
+            label = np.stack([weight, flow], axis=0)
+            labels.append(label)
+        
         return np.array(labels)
 
-    def label_to_annotation(self, labels):
+    def label_to_annotation(self, predictions):
         '''
         input:
-            label: array with shape n*3*H*W
+            predictions: array with shape n*3*H*W
                 [
                     image_1: [cell_prob, dy, dx]
                     image_2: ...
                     ...
                 ]
         output:
-            annotations: [
-                image_1: [[cell1], [cell2], ...]
+            annotations: n*2*H*W
+            [
+                image_1: [cell_id, weight]
                 image_2: ...
                 ... 
             ]
         '''
         annotations = []
-        for label in labels:
-            annotation = []
-            cell_prob = label[0] > self.cellprob_thresh
-            dP = label[1:]
+        for prediction in predictions:
+            cell_prob = prediction[0].sigmoid().cpu().numpy()
+            dP = prediction[1:].cpu().numpy()
             p = pose_process.follow_flows(-dP * (cell_prob)/5., niter=200)
-            maski = pose_process.get_masks(p, iscell=(cell_prob),flows=dP, threshold=self.flow_threshold)
+            maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
             maski = pose_process.fill_holes_and_remove_small_masks(maski)
-
-            annotations.append(annotation)
-        return annotations
+            annotations.append(np.stack([maski, cell_prob]))
+        return np.array(annotations)
 
     def update_annotation(self, prediction):
         '''
@@ -92,18 +86,30 @@ class Pose(Dataset):
     def metric(self, prediction):
         '''
         input:
-            prediction: array with shape n*1*H*W
-        output：
-
+            prediction: array with shape n*3*H*W
+        output:
+            stats: [precision, recall, mean error]
+            masks : n*H*W
+            [
+                mask1, 
+                mask2, 
+                ...
+            ]
         '''
-        pred = self.label_to_annotation(prediction)
-        return pose_process.metric(pred, self.annotations, self.thresh)
+        masks = self.label_to_annotation(prediction)[:, 0]
+        gt_masks = self.annotations[:, 0]
+        stats = pose_process.metric(masks, gt_masks, self.thresh)
+
+        return stats, masks
 
 
     def __getitem__(self, index):
-        batch = super().__getitem__(index)
+        image = self.images[index]
+        anno = self.annotations[index]
+        label = self.annotation_to_label([anno])
+        image, label = self.crop(self.CROP_SIZE, image, label)
         return {
-            'image': torch.FloatTensor(batch['image']),
-            'label': torch.FloatTensor(batch['label'])
+            'image': torch.FloatTensor(image),
+            'label': torch.FloatTensor(label)
         }     
 

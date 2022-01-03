@@ -12,7 +12,8 @@ Detection Dataset:
 class point(Dataset):
     def __init__(self, image_url, annotation_url, args) -> None:
         super().__init__(image_url, annotation_url, args)
-        self.annotations = np.array(self.annotations['detection'])[:, [0, 2, 1]]
+        detection = self.annotations['detection']
+        self.annotations = np.array(detection)[:, :, [0, 2, 1]]
         self.labels = self.annotation_to_label(self.annotations)
         self.sigma = 3
         self.num_classes = args.num_classes
@@ -38,11 +39,11 @@ class point(Dataset):
         input:
             label: array with shape n*1*H*W
         output:
-            annotation: n*2000*3
+            annotation: n*4000*3
         '''
         annotations = []
         for label in labels:
-            annotation = np.zeros((2000, 3))
+            annotation = np.zeros((4000, 3))
             ij = point_process.get_centers(label)
             annotation[:len(ij), 1:] = ij
             annotation[:len(ij), 0] = label[annotation]
