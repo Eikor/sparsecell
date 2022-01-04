@@ -1,7 +1,6 @@
 from torch.utils.data import Dataset
-import torch
 import numpy as np
-import json
+import os
 
 class genericDataset(Dataset):
     def __init__(self, image_url, annotation_url, args) -> None:
@@ -9,11 +8,15 @@ class genericDataset(Dataset):
         self.CROP_SIZE = args.crop_size
         print('load images')
         self.images = np.load(image_url)
+        if self.images.shape[1] > 3:
+            print('add channel axis')
+            self.images = self.images[:, None, :, :]
         print('Done.')
         # detection annotation: wights, i, j, h, w
         # segmentation annotation: [x1, y1, x2, y2, ...] 
         print('load annotations')
         self.annotations = np.load(annotation_url)
+        self.label_url = os.path.join(os.path.split(annotation_url)[0], f'anno_label{args.anno_rate}')
         print('Done.')
     
     def __len__(self):
@@ -31,10 +34,12 @@ class genericDataset(Dataset):
         new_annotation = self.label_to_annotation(prediction)
         self.annotations = new_annotation
 
-    def crop(crop_size, img, label):
-        if crop_size < 0:
+    def crop(self, img, label):
+        if self.CROP_SIZE < 0:
             return img, label
-        
+        if len(label.shape)==4:
+            label = label.squeeze()
+        crop_size = self.CROP_SIZE
         h, w = img.shape[1:3]        
         # random crop images
         tl = np.array([np.random.randint(0, h-crop_size),
@@ -49,7 +54,7 @@ class genericDataset(Dataset):
     def __getitem__(self, index):
         image = self.images[index]
         label = self.labels[index]
-        image, label = self.crop(self.CROP_SIZE, image, label)
+        image, label = self.crop(image, label)
         return {
             'image': image, # C*H*W
             'label': label # C*H*W

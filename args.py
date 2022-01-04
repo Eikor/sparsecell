@@ -10,6 +10,7 @@ def parse():
     parser.add_argument('--batch_size', type=int, default=8, help='batch size for training')
     parser.add_argument('--verbose', type=bool, default=True)
     parser.add_argument('--iter', type=int, default=20)
+    parser.add_argument('--save_interval', type=int, default=10)
     
     # net
     parser.add_argument('--num_channels', type=int, default=1)
@@ -34,6 +35,10 @@ def parse():
     return parser.parse_args()
 
 def get_args():
+    num_channels = {
+        'livecell': 1,
+        'tissuenet': 2,
+    }
     segmentation = ['pose']
     detection = ['point']
     args = parse()
@@ -43,8 +48,13 @@ def get_args():
     args.test_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
     args.val_image_url = f'./dataset/data/{args.dataset}/val/val_images.npy'
     args.val_anno_url = f'./dataset/data/{args.dataset}/val/val_annotation.npz'
+
+    args.num_channels = num_channels[args.dataset]
+    
     if args.data_mode in segmentation:
         print(f'using {args.data_mode} to segment {args.dataset}')
+        if args.data_mode == 'pose':
+            args.num_classes = 3
     elif args.data_mode in detection:
         print(f'using {args.data_mode} to detect {args.dataset}')
     else:

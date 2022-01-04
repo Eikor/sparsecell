@@ -14,13 +14,14 @@ wandb.init(dir=args.save_dir, config=args)
 train_set, val_set = dataset.load_dataset(args)
 
 ### baseline ###
-net = module.NN(args)
+net = module.NN(args).cuda()
 train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
 val_loader = DataLoader(val_set, batch_size=args.batch_size)
 
 for e in np.arange(args.epochs):
     net.train(train_loader, e, args)
-    stats = net.eval(val_loader, e, args)
+    stats, masks = net.eval(val_loader, e, args)
+
 
 ### INCV ###
 # random split dataset into 2 folds

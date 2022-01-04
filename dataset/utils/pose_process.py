@@ -2,6 +2,8 @@ from numpy.lib.arraysetops import unique
 from scipy.ndimage.filters import maximum_filter1d
 import scipy.ndimage
 import numpy as np
+from scipy.ndimage.measurements import find_objects
+from scipy.ndimage.morphology import binary_fill_holes
 from tqdm import trange
 from numba import njit, jit, float32, int32, vectorize
 from scipy.optimize import linear_sum_assignment
@@ -516,7 +518,52 @@ def get_masks(p, iscell=None, rpad=20, flows=None, threshold=0.4):
 
     return M0
 
-def mertric(preds:np.ndarray, gt:np.ndarray, thresh):
+def fill_holes_and_remove_small_masks(masks, min_size=15):
+    """ fill holes in masks (2D/3D) and discard masks smaller than min_size (2D)
+    
+    fill holes in each mask using scipy.ndimage.morphology.binary_fill_holes
+    
+    Parameters
+    ----------------
+
+    masks: int, 2D or 3D array
+        labelled masks, 0=NO masks; 1,2,...=mask labels,
+        size [Ly x Lx] or [Lz x Ly x Lx]
+
+    min_size: int (optional, default 15)
+        minimum number of pixels per mask, can turn off with -1
+
+    Returns
+    ---------------
+
+    masks: int, 2D or 3D array
+        masks with holes filled and masks smaller than min_size removed, 
+        0=NO masks; 1,2,...=mask labels,
+        size [Ly x Lx] or [Lz x Ly x Lx]
+    
+    """
+    if masks.ndim > 3 or masks.ndim < 2:
+        raise ValueError('masks_to_outlines takes 2D or 3D array, not %dD array'%masks.ndim)
+    
+    slices = find_objects(masks)
+    j = 0
+    for i,slc in enumerate(slices):
+        if slc is not None:
+            msk = masks[slc] == (i+1)
+            npix = msk.sum()
+            if min_size > 0 and npix < min_size:
+                masks[slc][msk] = 0
+            else:    
+                if msk.ndim==3:
+                    for k in range(msk.shape[0]):
+                        msk[k] = binary_fill_holes(msk[k])
+                else:
+                    msk = binary_fill_holes(msk)
+                masks[slc][msk] = (j+1)
+                j+=1
+    return masks
+
+def metric(preds:np.ndarray, gt:np.ndarray, thresh):
     '''
     Input: 
         preds: n*H*W [mask1, mask2, ...]
@@ -525,11 +572,16 @@ def mertric(preds:np.ndarray, gt:np.ndarray, thresh):
     preds = preds.squeeze()
     gt = gt.squeeze()
     stats = []
+
     for pred, true in zip(preds, gt):
+        if len(np.unique(pred)) == 1:
+            stats.append([0, 0, 0])
+            continue
         ious, assign = mask_ious(true, pred)
         tp = np.sum(ious>thresh)
-        precision = tp / np.len(np.unique(pred))
-        recall = tp / np.len(np.unique(gt))
+        precision = tp / len(np.unique(pred))
+        recall = tp / len(np.unique(gt))
         mean_error = np.mean(ious[ious>thresh])
         stats.append([precision, recall, mean_error])
+    
     return stats
