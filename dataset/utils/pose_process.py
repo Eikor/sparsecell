@@ -111,12 +111,12 @@ def flow_error(maski, dP_net):
     for i,iu in enumerate(iun):
         ii = maski==iu
         if dP_masks.shape[0]==2:
-            flow_errors[i] += ((dP_masks[0][ii] - dP_net[0][ii]/5.)**2
-                            + (dP_masks[1][ii] - dP_net[1][ii]/5.)**2).mean()
+            flow_errors[i] += ((dP_masks[0][ii] - dP_net[0][ii])**2
+                            + (dP_masks[1][ii] - dP_net[1][ii])**2).mean()
         else:
-            flow_errors[i] += ((dP_masks[0][ii] - dP_net[0][ii]/5.)**2 * 0.5
-                            + (dP_masks[1][ii] - dP_net[1][ii]/5.)**2
-                            + (dP_masks[2][ii] - dP_net[2][ii]/5.)**2).mean()
+            flow_errors[i] += ((dP_masks[0][ii] - dP_net[0][ii])**2 * 0.5
+                            + (dP_masks[1][ii] - dP_net[1][ii])**2
+                            + (dP_masks[2][ii] - dP_net[2][ii])**2).mean()
     return flow_errors, dP_masks
 
 def diameters(masks):

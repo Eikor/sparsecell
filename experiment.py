@@ -29,11 +29,11 @@ if args.mode == 'train':
 ### test ###
 
 if args.mode == 'test':
-    args.val_image_url = args.train_image_url
-    args.val_anno_url = args.train_anno_url
+    args.val_image_url = args.test_image_url
+    args.val_anno_url = args.test_anno_url
     test_set = dataset.load_test_dataset(args)
     test_loader = DataLoader(test_set, batch_size=args.batch_size)
-    state_dict = torch.load('result/01_05_11_51_35/epoch_200.pth')
+    state_dict = torch.load('result/01_07_11_24_30/epoch_100.pth')
     net.backbone.load_state_dict(state_dict['model_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)
     print(stats)

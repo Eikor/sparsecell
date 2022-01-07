@@ -7,7 +7,7 @@ def parse():
     # training
     parser.add_argument('--epochs', type=int, default=200, help='epochs for training')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for main task')
-    parser.add_argument('--batch_size', type=int, default=8, help='batch size for training')
+    parser.add_argument('--batch_size', type=int, default=12, help='batch size for training')
     parser.add_argument('--verbose', type=bool, default=True)
     parser.add_argument('--iter', type=int, default=20)
     parser.add_argument('--save_interval', type=int, default=10)
@@ -23,8 +23,8 @@ def parse():
     # dataset
     parser.add_argument('--dataset', type=str, default='livecell')
     parser.add_argument('--data_mode', type=str, default='pose')
-    parser.add_argument('--anno_rate', type=float, default=0.1)
-    parser.add_argument('--crop_size', type=int, default=400)
+    parser.add_argument('--anno_rate', type=float, default=0.8)
+    parser.add_argument('--crop_size', type=int, default=320)
 
     
     ### test args
@@ -44,8 +44,8 @@ def get_args():
     args = parse()
     args.train_image_url = f'./dataset/data/{args.dataset}/train/train_images.npy'
     args.train_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
-    args.test_image_url = f'./dataset/data/{args.dataset}/train/train_images.npy'
-    args.test_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
+    args.test_image_url = f'./dataset/data/{args.dataset}/test/test_images.npy'
+    args.test_anno_url = f'./dataset/data/{args.dataset}/test/test_annotation.npz'
     args.val_image_url = f'./dataset/data/{args.dataset}/val/val_images.npy'
     args.val_anno_url = f'./dataset/data/{args.dataset}/val/val_annotation.npz'
 

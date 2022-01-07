@@ -8,6 +8,7 @@ class genericDataset(Dataset):
         self.CROP_SIZE = args.crop_size
         print('load images')
         self.images = np.load(image_url)
+        self.images = self.images / np.max(self.images)
         if self.images.shape[1] > 3:
             print('add channel axis')
             self.images = self.images[:, None, :, :]

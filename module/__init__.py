@@ -113,9 +113,9 @@ class NN(nn.Module):
                     'model_state_dict': self.backbone.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),
                     }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth'))  
-                metric, masks = dataset.iterable.dataset.metric(outputs)
+                metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
         else:
-            metric, masks = dataset.iterable.dataset.metric(outputs)
+            metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
         
         dataset.close()
         

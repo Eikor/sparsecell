@@ -86,7 +86,7 @@ class Pose(Dataset):
         for prediction in tqdm(predictions, desc='Follow flows'):
             cell_prob = prediction[0].sigmoid().numpy()
             dP = prediction[1:].cpu().numpy()
-            p = pose_process.follow_flows(-dP * (cell_prob)/5., niter=200)
+            p = pose_process.follow_flows(-dP * (cell_prob), niter=200)
             maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
             maski = pose_process.fill_holes_and_remove_small_masks(maski)
             annotations.append(np.stack([cell_prob, maski]))
@@ -101,7 +101,7 @@ class Pose(Dataset):
         self.label_url = os.path.join(os.path.split(self.label_url)[0], 'pseudo_label')
         self.annotation_to_label(self.annotations, self.label_url)
     
-    def metric(self, prediction):
+    def metric(self, prediction, args, verbose=False):
         '''
         input:
             prediction: array with shape n*3*H*W
@@ -115,10 +115,30 @@ class Pose(Dataset):
             ]
         '''
         masks = self.label_to_annotation(prediction[0:20])[:, 1].astype(int)
-        gt_masks = self.annotations[:, 0]
+        gt_masks = self.annotations[:, 1]
         print('calculate iou')
         stats = pose_process.metric(masks, gt_masks, self.iou_thresh)
+        if verbose:
+            test_url = args.save_dir + '/test'
+            try:
+                os.makedirs(test_url)
+            except:
+                pass
 
+            for i, (mask, gt_mask) in enumerate(zip(masks, gt_masks)):
+                img = self.images[i]
+                img_channels = img.shape[0]
+                if img_channels == 1:
+                    img = cv2.cvtColor((img.transpose(1, 2, 0)*255).astype('uint8'), cv2.COLOR_GRAY2RGB)
+                elif img_channels == 2:
+                    zeros = np.zeros_like(img[0:1])
+                    img = np.concatenate([img, zeros]).transpose(1, 2, 0)
+                canvas = img
+                mask_ = img
+                mask_[mask>0, 2] = 255
+                mask_[gt_mask>0, 1] = 255
+                canvas = cv2.addWeighted(canvas, 0.8, mask_, 0.2, 0)
+                cv2.imwrite(test_url + f'/{i}.jpg', canvas)
         return stats, masks
 
 
