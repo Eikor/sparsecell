@@ -94,26 +94,28 @@ class NN(nn.Module):
             pred = self.backbone(imgs)
             loss = self.criterion(pred, gt)
             avg_loss += loss.item() / len(dataset)
-            outputs.append(pred)
+            outputs.append(pred.cpu())
             dataset.set_postfix({
                 'loss': '{0:1.5f}'.format(loss.item())
                 })
             if verbose_flag:
                 verbose_img = imgs[0]
                 verbose_flag = False
-
-        wandb.log({'eval loss': avg_loss, "epoch":epoch})
         outputs = torch.cat(outputs)
-        if args.verbose:
-            mask = dataset.iterable.dataset.label_to_annotation(outputs[0:1])[:, 1].astype(int)
-            self.verbose(verbose_img, mask, epoch, args)
-
-        # if (epoch+1) % args.save_interval == 0:
-        torch.save({
-            'model_state_dict': self.backbone.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-            }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth'))  
-        metric, masks = dataset.iterable.dataset.metric(outputs)
+        
+        if not args.mode == 'test':
+            if args.verbose:
+                mask = dataset.iterable.dataset.label_to_annotation(outputs[0:1])[:, 1].astype(int)
+                self.verbose(verbose_img, mask, epoch, args)
+            wandb.log({'eval loss': avg_loss, "epoch":epoch})
+            if (epoch+1) % args.save_interval == 0:
+                torch.save({
+                    'model_state_dict': self.backbone.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                    }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth'))  
+                metric, masks = dataset.iterable.dataset.metric(outputs)
+        else:
+            metric, masks = dataset.iterable.dataset.metric(outputs)
         
         dataset.close()
         

@@ -30,7 +30,7 @@ class PoseLoss(nn.Module):
         flow = y_hat[:, 1:, :, :]
         gt_flow = y[:, 1:, :, :]
         prob_loss = torch.log(prob) * mask + torch.log(1 - prob) * (~mask)
-        return torch.mean(weights * (self.theta*self.l2(flow, gt_flow) - prob_loss))
+        return torch.mean(weights * self.theta*self.l2(flow, gt_flow) - prob_loss)
     
     # @torch.no_grad()
     # def eval(self, y_hat):

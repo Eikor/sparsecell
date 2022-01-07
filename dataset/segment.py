@@ -10,7 +10,11 @@ class Pose(Dataset):
     def __init__(self, image_url, annotation_url, args, Aug=True) -> None:
         super().__init__(image_url, annotation_url, args)
         print('build pose dataset')
-        self.annotations = self.annotations['segmentation']
+        if args.mode == 'test':
+            self.annotations = self.annotations['segmentation'][:10]
+        else:
+            self.annotations = self.annotations['segmentation']
+
         # self.labels = self.annotation_to_label(self.annotations)
         if os.path.exists(self.label_url):
             print('check existing label buffer')
@@ -30,6 +34,7 @@ class Pose(Dataset):
         self.flow_threshold = 0.5
         self.iou_thresh = 0.5
         print('Done.')
+        
 
     def annotation_to_label(self, annotations, save_dir=None):
         """
@@ -79,7 +84,7 @@ class Pose(Dataset):
         '''
         annotations = []
         for prediction in tqdm(predictions, desc='Follow flows'):
-            cell_prob = prediction[0].sigmoid().cpu().numpy()
+            cell_prob = prediction[0].sigmoid().numpy()
             dP = prediction[1:].cpu().numpy()
             p = pose_process.follow_flows(-dP * (cell_prob)/5., niter=200)
             maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
@@ -122,6 +127,8 @@ class Pose(Dataset):
         label_url = os.path.join(self.label_url, f'{index}.npy')
         if os.path.exists(label_url):
             label = np.load(label_url)
+            if len(label.shape) == 4:
+                label = label[0]
         else:
             anno = self.annotations[index]
             label = self.annotation_to_label([anno]).squeeze()

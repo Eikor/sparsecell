@@ -68,5 +68,7 @@ def get_args():
         pass
     return args
 
-def describe():
-    return get_args()
+def describe(mode):
+    args = get_args()
+    args.mode = mode
+    return args

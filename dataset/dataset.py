@@ -20,7 +20,7 @@ class genericDataset(Dataset):
         print('Done.')
     
     def __len__(self):
-        return len(self.images) 
+        return len(self.annotations) 
 
     def annotation_to_label(self, annotation):
         label = annotation
