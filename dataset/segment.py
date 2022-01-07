@@ -7,15 +7,11 @@ from tqdm import tqdm
 import os
 
 class Pose(Dataset):
-    def __init__(self, image_url, annotation_url, args, Aug=True) -> None:
-        super().__init__(image_url, annotation_url, args)
+    def __init__(self, image_url, annotation_url, label_url, args, Aug=True) -> None:
+        super().__init__(image_url, annotation_url, label_url, args)
         print('build pose dataset')
-        if args.mode == 'test':
-            self.annotations = self.annotations['segmentation'][:10]
-        else:
-            self.annotations = self.annotations['segmentation']
+        self.annotations = self.annotations['segmentation']
 
-        # self.labels = self.annotation_to_label(self.annotations)
         if os.path.exists(self.label_url):
             print('check existing label buffer')
             for i in range(len(self.annotations)):

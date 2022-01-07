@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 class genericDataset(Dataset):
-    def __init__(self, image_url, annotation_url, args) -> None:
+    def __init__(self, image_url, annotation_url, label_url, args) -> None:
         super().__init__()
         self.CROP_SIZE = args.crop_size
         print('load images')
@@ -17,7 +17,8 @@ class genericDataset(Dataset):
         # segmentation annotation: [x1, y1, x2, y2, ...] 
         print('load annotations')
         self.annotations = np.load(annotation_url)
-        self.label_url = os.path.join(os.path.split(annotation_url)[0], f'anno_label{args.anno_rate}')
+        # if args.mode == ''
+        self.label_url = label_url
         print('Done.')
     
     def __len__(self):

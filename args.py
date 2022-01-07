@@ -42,12 +42,17 @@ def get_args():
     segmentation = ['pose']
     detection = ['point']
     args = parse()
+
     args.train_image_url = f'./dataset/data/{args.dataset}/train/train_images.npy'
     args.train_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
+    args.train_label_url = f'./dataset/data/{args.dataset}/train/{args.data_mode}_label{args.anno_rate}'
     args.test_image_url = f'./dataset/data/{args.dataset}/test/test_images.npy'
     args.test_anno_url = f'./dataset/data/{args.dataset}/test/test_annotation.npz'
+    args.test_label_url = f'./dataset/data/{args.dataset}/test/{args.data_mode}_label'
     args.val_image_url = f'./dataset/data/{args.dataset}/val/val_images.npy'
     args.val_anno_url = f'./dataset/data/{args.dataset}/val/val_annotation.npz'
+    args.val_label_url = f'./dataset/data/{args.dataset}/val/{args.data_mode}_label'
+    
 
     args.num_channels = num_channels[args.dataset]
     

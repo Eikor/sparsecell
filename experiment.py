@@ -16,8 +16,8 @@ net = module.NN(args).cuda()
 if args.mode == 'train':
     wandb.init(dir=args.save_dir, config=args)
     train_set = dataset.load_train_dataset(args)
-    val_set = dataset.load_test_dataset(args)
-    # train_set, val_set = dataset.load_dataset(args)
+    val_set = dataset.load_val_dataset(args)
+    
 
     ### baseline ###
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
@@ -29,8 +29,6 @@ if args.mode == 'train':
 ### test ###
 
 if args.mode == 'test':
-    args.val_image_url = args.test_image_url
-    args.val_anno_url = args.test_anno_url
     test_set = dataset.load_test_dataset(args)
     test_loader = DataLoader(test_set, batch_size=args.batch_size)
     state_dict = torch.load('result/01_07_11_24_30/epoch_100.pth')
