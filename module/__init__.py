@@ -114,6 +114,12 @@ class NN(nn.Module):
                     'optimizer_state_dict': self.optimizer.state_dict(),
                     }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth'))  
                 metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
+                metric_mean = np.mean(metric, axis=1)
+                wandb.log({
+                    'val precision': metric_mean[0],
+                    'val recall': metric_mean[1],
+                    'val iou error': metric_mean[2]
+                    })
         else:
             metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
         

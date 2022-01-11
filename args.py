@@ -15,7 +15,9 @@ def parse():
     # net
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--num_classes', type=int, default=1)
-    parser.add_argument('--pose_theta', type=float, default=5)
+    parser.add_argument('--pose_alpha', type=float, default=1)
+    parser.add_argument('--pose_beta', type=float, default=5)
+
 
     # save dir
     parser.add_argument('--save_dir', type=str, default='./result', help='directory to save record file')

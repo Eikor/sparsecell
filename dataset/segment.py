@@ -99,6 +99,7 @@ class Pose(Dataset):
     
     def metric(self, prediction, args, verbose=False):
         '''
+        metric top 100 prediction
         input:
             prediction: array with shape n*3*H*W
         output:
@@ -110,7 +111,7 @@ class Pose(Dataset):
                 ...
             ]
         '''
-        masks = self.label_to_annotation(prediction[0:20])[:, 1].astype(int)
+        masks = self.label_to_annotation(prediction[0:100])[:, 1].astype(int)
         gt_masks = self.annotations[:, 1]
         print('calculate iou')
         stats = pose_process.metric(masks, gt_masks, self.iou_thresh)
@@ -135,6 +136,7 @@ class Pose(Dataset):
                 mask_[gt_mask>0, 1] = 255
                 canvas = cv2.addWeighted(canvas, 0.8, mask_, 0.2, 0)
                 cv2.imwrite(test_url + f'/{i}.jpg', canvas)
+        stats = np.array(stats)
         return stats, masks
 
 

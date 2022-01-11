@@ -19,7 +19,8 @@ class PointLoss(nn.Module):
 class PoseLoss(nn.Module):
     def __init__(self, args):
         super(PoseLoss, self).__init__()
-        self.theta = args.pose_theta
+        self.alpha = args.pose_alpha
+        self.beta = args.pose_beta
         self.thresh = 0.5
         self.l2 = nn.MSELoss(reduce=None)
    
@@ -30,7 +31,7 @@ class PoseLoss(nn.Module):
         flow = y_hat[:, 1:, :, :]
         gt_flow = y[:, 1:, :, :]
         prob_loss = torch.log(prob) * mask + torch.log(1 - prob) * (~mask)
-        return torch.mean(weights * self.theta*self.l2(flow, gt_flow) - prob_loss)
+        return torch.mean(weights*self.beta*self.l2(flow, gt_flow) - self.alpha*prob_loss)
     
     # @torch.no_grad()
     # def eval(self, y_hat):
