@@ -579,8 +579,8 @@ def metric(preds:np.ndarray, gt:np.ndarray, thresh):
             continue
         ious, assign = mask_ious(true, pred)
         tp = np.sum(ious>thresh)
-        precision = tp / len(np.unique(pred))
-        recall = tp / len(np.unique(gt))
+        precision = tp / (len(np.unique(pred))-1)
+        recall = tp / (len(np.unique(true)) -1)
         mean_error = np.mean(ious[ious>thresh])
         stats.append([precision, recall, mean_error])
     

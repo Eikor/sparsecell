@@ -31,7 +31,7 @@ if args.mode == 'train':
 if args.mode == 'test':
     test_set = dataset.load_test_dataset(args)
     test_loader = DataLoader(test_set, batch_size=args.batch_size)
-    state_dict = torch.load('result/01_07_11_24_30/epoch_100.pth')
+    state_dict = torch.load('result/01_08_02_36_34/epoch_200.pth')
     net.backbone.load_state_dict(state_dict['model_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)
     print(stats)
