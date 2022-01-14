@@ -1,6 +1,7 @@
 from numpy.lib.shape_base import expand_dims
 import module.loss_fn as loss_fn
 import module.unet as unet
+import module.comasking as comasking
 import torch
 import torch.nn as nn
 from torch import optim
@@ -21,24 +22,27 @@ class NN(nn.Module):
             self.criterion = loss_fn.PoseLoss(args)
         self.optimizer = optim.Adam(self.backbone.parameters(), lr=args.lr)
         print('Done.')
-        
-    def train(self, dataset, epoch, args):
+
+    def train_step(self, batch):
+        imgs = batch['image'].to(device=torch.device('cuda'))
+        gt = batch['label'].to(device=torch.device('cuda'))
+        loss = self.criterion(self.backbone(imgs), gt)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        return loss.item()
+
+    def train_epoch(self, dataset, epoch, args):
         self.backbone.train()
         avg_loss = 0
         dataset = tqdm(dataset, desc=f'Epoch: {epoch+1}')
         for batch in dataset:
-            imgs = batch['image'].to(device=torch.device('cuda'))
-            gt = batch['label'].to(device=torch.device('cuda'))
-
-            loss = self.criterion(self.backbone(imgs), gt)
-            self.optimizer.zero_grad()
-            loss.backward()
-            avg_loss += loss.item() / len(dataset)
+            loss = self.train_step(batch)
+            avg_loss += loss / len(dataset)
             dataset.set_postfix({
-                'loss': '{0:1.5f}'.format(loss.item()),
+                'loss': '{0:1.5f}'.format(loss),
                 'avg_loss': '{0:1.5f}'.format(avg_loss)
                 })
-            self.optimizer.step()
         dataset.close()
         wandb.log({'train loss': avg_loss, "epoch":epoch})
         return avg_loss

@@ -29,6 +29,8 @@ class Pose(Dataset):
         self.cellprob_thresh = 0.5
         self.flow_threshold = 0.5
         self.iou_thresh = 0.5
+        self.pose_alpha = args.pose_alpha
+        self.pose_beta = args.pose_beta
         print('Done.')
         
 
@@ -82,8 +84,12 @@ class Pose(Dataset):
         for prediction in tqdm(predictions, desc='Follow flows'):
             cell_prob = prediction[0].sigmoid().numpy()
             dP = prediction[1:].cpu().numpy()
-            p = pose_process.follow_flows(-dP * (cell_prob), niter=200)
-            maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
+            if self.pose_alpha == 0:
+                p = pose_process.follow_flows(-dP, niter=200)
+                maski = pose_process.get_masks(p, iscell=None, flows=None, threshold=self.flow_threshold)
+            else:
+                p = pose_process.follow_flows(-dP * (cell_prob), niter=200)
+                maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
             maski = pose_process.fill_holes_and_remove_small_masks(maski)
             annotations.append(np.stack([cell_prob, maski]))
         return np.array(annotations)

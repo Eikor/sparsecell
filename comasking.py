@@ -4,14 +4,13 @@ from torch.utils.data import random_split, DataLoader
 import numpy as np
 import dataset
 from args import describe
-import module
+import module.comasking as comasking
 
 #### save exp info ###
 args = describe('train')
 
 ### prepare experiment Material ###
-net = module.NN(args).cuda()
-
+net = comasking.CoMasking(args)
 
 if args.mode == 'train':
     wandb.init(dir=args.save_dir, config=args)
@@ -35,4 +34,8 @@ if args.mode == 'test':
     net.backbone.load_state_dict(state_dict['model_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)
     print(stats)
+
+
+
+    
 

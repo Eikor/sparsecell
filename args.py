@@ -25,7 +25,7 @@ def parse():
     # dataset
     parser.add_argument('--dataset', type=str, default='livecell')
     parser.add_argument('--data_mode', type=str, default='pose')
-    parser.add_argument('--anno_rate', type=float, default=0.8)
+    parser.add_argument('--anno_rate', type=float, default=0.1)
     parser.add_argument('--crop_size', type=int, default=320)
 
     
