@@ -10,7 +10,7 @@ import module.comasking as comasking
 args = describe('train')
 
 ### prepare experiment Material ###
-net = comasking.CoMasking(args)
+net = comasking.CoMasking(args).cuda()
 
 if args.mode == 'train':
     wandb.init(dir=args.save_dir, config=args)

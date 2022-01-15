@@ -1,3 +1,4 @@
+from turtle import pos
 import torch
 import torch.nn as nn
 from dataset.utils import point_process
@@ -41,7 +42,7 @@ class PoseLoss(nn.Module):
         if torch.any(weights<0):
             neg_mask = weights < 0
         else: neg_mask = weights == 0
-        select_mask = pos_mask or neg_mask
+        select_mask = pos_mask + neg_mask
 
         prob_loss = torch.log(prob) * pos_mask + torch.log(1 - prob) * (neg_mask)
         sum_loss = (self.beta*self.l2(flow, gt_flow) - self.alpha*prob_loss) * select_mask
@@ -59,3 +60,64 @@ class PoseLoss(nn.Module):
     #         'output': prob.detach().cpy().numpy(),
     #         'flow': flow.detach().cpu().numpy()
     #     }
+
+class MaskLoss(nn.Module):
+    def __init__(self, args):
+        super(MaskLoss, self).__init__()
+        self.alpha = args.pose_alpha
+        self.beta = args.pose_beta
+        self.thresh = 0.5
+        self.l2 = nn.MSELoss(reduce=None)
+   
+    def forward(self, y_hat, y, reduce='mean'):
+        '''
+        weights: 
+            1 for cell；
+            (0, 1) for low-confidence cell;
+            0 for unlabeled pixel, 50-50
+            [-1, 0) for background
+        '''
+        pos_mask = y == 1
+        neg_mask = y == 0
+        prob = torch.sigmoid(y_hat[:, 0, :, :]).clamp(min=1e-4, max=(1 - 1e-4))
+        prob_loss = torch.log(prob) * pos_mask + torch.log(1 - prob) * neg_mask
+        if reduce == 'mean':
+            return - torch.sum(prob_loss) / torch.sum(pos_mask + neg_mask)
+        else:
+            return -prob_loss    
+
+class FlowLoss(nn.Module):
+    def __init__(self, args):
+        super(FlowLoss, self).__init__()
+        self.beta = args.pose_beta
+        self.l2 = nn.MSELoss(reduce=None)
+   
+    def forward(self, y_hat, y, reduce='mean'):
+        flow = y_hat[:, 1:, :, :]
+        weights = y[:, 0, :, :]
+        gt_flow = y[:, 1:, :, :]
+        
+        pos_mask = weights == 1
+        loss = self.beta * self.l2(flow, gt_flow) * pos_mask
+        if reduce == 'mean':
+            if torch.sum(pos_mask) == 0:
+                return torch.sum(loss)
+            return torch.sum(loss) / torch.sum(pos_mask)
+        else:
+            return loss
+
+class ConsistLoss(nn.Module):
+    def __init__(self, args):
+        super(ConsistLoss, self).__init__()
+        self.consist = args.consist
+        self.l2 = nn.MSELoss(reduce=None)
+   
+    def forward(self, y_f, y_g, reduce='mean'):
+        flow_f = y_f[:, 1:, :, :]
+        flow_g = y_g[:, 1:, :, :]
+
+        loss = self.consist * self.l2(flow_f, flow_g)
+        if reduce == 'mean':
+            return torch.mean(loss)
+        else:
+            return loss
