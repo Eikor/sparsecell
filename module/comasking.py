@@ -109,6 +109,13 @@ class CoMasking(nn.Module):
                 'loss_g_flow': '{0:1.5f}'.format(loss_g[1]),
                 'consistency': '{0:1.5f}'.format(consistence)
                 })
+            wandb.log({
+                'loss_f_mask': '{0:1.5f}'.format(loss_f[0]),
+                'loss_g_mask': '{0:1.5f}'.format(loss_g[0]),
+                'loss_f_flow': '{0:1.5f}'.format(loss_f[1]),
+                'loss_g_flow': '{0:1.5f}'.format(loss_g[1]),
+                'consistency': '{0:1.5f}'.format(consistence)
+                })
         dataset.close()
         wandb.log({'train loss': avg_loss, "epoch":epoch})
         return avg_loss
@@ -157,7 +164,7 @@ class CoMasking(nn.Module):
         masks = None
         if args.verbose:
             verbose_flag = True
-            
+
         dataset = tqdm(dataset, desc=f'Eval Epoch: {epoch+1}')
         for batch in dataset:
             imgs = batch['image'].to(device=torch.device('cuda'))
