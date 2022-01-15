@@ -188,8 +188,10 @@ class CoMasking(nn.Module):
             wandb.log({'eval loss': avg_loss, "epoch":epoch})
             if (epoch+1) % args.save_interval == 0:
                 torch.save({
-                    'model_state_dict': self.backbone.state_dict(),
-                    'optimizer_state_dict': self.optimizer.state_dict(),
+                    'fmodel_state_dict': self.wf.state_dict(),
+                    'gmodel_state_dict': self.wg.state_dict(),
+                    'foptimizer_state_dict': self.optimizer_f.state_dict(),
+                    'goptimizer_state_dict': self.optimizer_g.state_dict(),
                     }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth'))  
                 metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
                 metric_mean = np.mean(metric, axis=0)
