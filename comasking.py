@@ -7,7 +7,7 @@ from args import describe
 import module.comasking as comasking
 
 #### save exp info ###
-args = describe('train')
+args = describe('test')
 
 ### prepare experiment Material ###
 net = comasking.CoMasking(args).cuda()
@@ -30,8 +30,9 @@ if args.mode == 'train':
 if args.mode == 'test':
     test_set = dataset.load_test_dataset(args)
     test_loader = DataLoader(test_set, batch_size=args.batch_size)
-    state_dict = torch.load('result/01_08_02_36_34/epoch_200.pth')
-    net.backbone.load_state_dict(state_dict['model_state_dict'])
+    state_dict = torch.load('result/01_16_22_21_47/epoch_200.pth')
+    net.wf.load_state_dict(state_dict['fmodel_state_dict'])
+    net.wg.load_state_dict(state_dict['gmodel_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)
     print(stats)
 

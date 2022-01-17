@@ -92,6 +92,10 @@ class CoMasking(nn.Module):
         self.wf.train()
         self.wg.train()
         avg_loss = 0
+        avg_f_mask = 0
+        avg_g_mask = 0
+        avg_f_flow = 0
+        avg_g_flow = 0
         neg_ratio = args.neg_ratio
         pos_ratio = args.pos_ratio
         dataset = tqdm(dataset, desc=f'Epoch: {epoch+1}')
@@ -101,7 +105,11 @@ class CoMasking(nn.Module):
             loss_f, loss_g = losses['loss_f'], losses['loss_g']
             consistence = losses['consistence']
             avg_loss += (sum(loss_f)+sum(loss_g) + consistence) / len(dataset)
-            
+            avg_f_mask += loss_f[0] / len(dataset)
+            avg_g_mask += loss_g[0] / len(dataset)
+            avg_f_flow += loss_f[1] / len(dataset)
+            avg_g_flow += loss_g[1] / len(dataset)
+
             dataset.set_postfix({
                 'loss_f_mask': '{0:1.5f}'.format(loss_f[0]),
                 'loss_g_mask': '{0:1.5f}'.format(loss_g[0]),
@@ -109,15 +117,15 @@ class CoMasking(nn.Module):
                 'loss_g_flow': '{0:1.5f}'.format(loss_g[1]),
                 'consistency': '{0:1.5f}'.format(consistence)
                 })
-            wandb.log({
-                'loss_f_mask': '{0:1.5f}'.format(loss_f[0]),
-                'loss_g_mask': '{0:1.5f}'.format(loss_g[0]),
-                'loss_f_flow': '{0:1.5f}'.format(loss_f[1]),
-                'loss_g_flow': '{0:1.5f}'.format(loss_g[1]),
-                'consistency': '{0:1.5f}'.format(consistence)
-                })
         dataset.close()
-        wandb.log({'train loss': avg_loss, "epoch":epoch})
+        wandb.log({
+            'loss_f_mask': avg_f_mask[0],
+            'loss_g_mask': avg_g_mask[0],
+            'loss_f_flow': avg_f_flow[1],
+            'loss_g_flow': avg_g_flow[1],
+            'consistency': consistence,
+            'train loss': avg_loss
+            })
         return avg_loss
     
     @torch.no_grad()
