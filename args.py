@@ -16,7 +16,7 @@ def parse():
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--num_classes', type=int, default=1)
     parser.add_argument('--pose_alpha', type=float, default=1)
-    parser.add_argument('--pose_beta', type=float, default=5)
+    parser.add_argument('--pose_beta', type=float, default=25)
     parser.add_argument('--consist', type=float, default=0.1)
     parser.add_argument('--neg_ratio', type=float, default=0.2)
     parser.add_argument('--pos_ratio', type=float, default=0.1)

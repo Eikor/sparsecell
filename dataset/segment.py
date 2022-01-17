@@ -26,7 +26,7 @@ class Pose(Dataset):
             self.CROP_SIZE = -1
         self.sigma = 3
         self.num_classes = args.num_classes
-        self.cellprob_thresh = 0.5
+        self.cellprob_thresh = 1
         self.flow_threshold = 0.5
         self.iou_thresh = 0.5
         self.pose_alpha = args.pose_alpha

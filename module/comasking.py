@@ -119,10 +119,10 @@ class CoMasking(nn.Module):
                 })
         dataset.close()
         wandb.log({
-            'loss_f_mask': avg_f_mask[0],
-            'loss_g_mask': avg_g_mask[0],
-            'loss_f_flow': avg_f_flow[1],
-            'loss_g_flow': avg_g_flow[1],
+            'loss_f_mask': avg_f_mask,
+            'loss_g_mask': avg_g_mask,
+            'loss_f_flow': avg_f_flow,
+            'loss_g_flow': avg_g_flow,
             'consistency': consistence,
             'train loss': avg_loss
             })

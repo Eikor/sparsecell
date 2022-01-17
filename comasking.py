@@ -7,7 +7,7 @@ from args import describe
 import module.comasking as comasking
 
 #### save exp info ###
-args = describe('test')
+args = describe('train')
 
 ### prepare experiment Material ###
 net = comasking.CoMasking(args).cuda()
