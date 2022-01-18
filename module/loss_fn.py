@@ -50,7 +50,10 @@ class PoseLoss(nn.Module):
         prob_loss = -torch.sum(torch.log(prob) * pos_mask + torch.log(1 - prob) * (neg_mask)) / torch.sum(select_mask)
     
         if masked:
-            flow_loss = torch.sum(self.l2(flow, gt_flow) * pos_mask) / torch.sum(pos_mask)
+            if torch.sum(pos_mask) == 0:
+                flow_loss = torch.sum(self.l2(flow, gt_flow) * pos_mask)
+            else:
+                flow_loss = torch.sum(self.l2(flow, gt_flow) * pos_mask) / torch.sum(pos_mask)
         else:
             flow_loss = torch.sum(self.l2(flow, gt_flow) * select_mask) / torch.sum(select_mask)
 
