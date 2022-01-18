@@ -23,9 +23,12 @@ class PoseLoss(nn.Module):
         self.alpha = args.pose_alpha
         self.beta = args.pose_beta
         self.thresh = 0.5
-        self.l2 = nn.MSELoss(reduce=None)
+        if args.pose_loss == 'l1':
+            self.l2 = nn.L1Loss(reduction='none')
+        else:
+            self.l2 = nn.MSELoss(reduction='none')
    
-    def forward(self, y_hat, y, reduction='sum'):
+    def forward(self, y_hat, y, reduction='sum', masked=False):
         '''
         weights: 
             1 for cell；
@@ -35,7 +38,7 @@ class PoseLoss(nn.Module):
         '''
         prob = torch.sigmoid(y_hat[:, 0, :, :]).clamp(min=1e-4, max=(1 - 1e-4))
         flow = y_hat[:, 1:, :, :]
-        weights = y[:, 0, :, :]
+        weights = y[:, 0:1, :, :]
         gt_flow = y[:, 1:, :, :]
         
         pos_mask = weights > self.thresh
@@ -44,13 +47,14 @@ class PoseLoss(nn.Module):
         else: neg_mask = weights == 0
         select_mask = pos_mask + neg_mask
 
-        prob_loss = torch.log(prob) * pos_mask + torch.log(1 - prob) * (neg_mask)
-        sum_loss = (self.beta*self.l2(flow, gt_flow) - self.alpha*prob_loss) * select_mask
-        if reduction == 'sum':
-            sum_loss = torch.sum(sum_loss)
-            return sum_loss / torch.sum(select_mask)
+        prob_loss = -torch.sum(torch.log(prob) * pos_mask + torch.log(1 - prob) * (neg_mask)) / torch.sum(select_mask)
+    
+        if masked:
+            flow_loss = torch.sum(self.l2(flow, gt_flow) * pos_mask) / torch.sum(pos_mask)
         else:
-            return sum_loss
+            flow_loss = torch.sum(self.l2(flow, gt_flow) * select_mask) / torch.sum(select_mask)
+
+        return self.beta * flow_loss + self.alpha * prob_loss
     
     # @torch.no_grad()
     # def eval(self, y_hat):
@@ -67,7 +71,6 @@ class MaskLoss(nn.Module):
         self.alpha = args.pose_alpha
         self.beta = args.pose_beta
         self.thresh = 0.5
-        self.l2 = nn.MSELoss(reduce=None)
    
     def forward(self, y_hat, y, reduce='mean'):
         '''
@@ -90,7 +93,7 @@ class FlowLoss(nn.Module):
     def __init__(self, args):
         super(FlowLoss, self).__init__()
         self.beta = args.pose_beta
-        self.l2 = nn.MSELoss(reduce=None)
+        self.l2 = nn.MSELoss(reduction='none')
    
     def forward(self, y_hat, y, reduce='mean'):
         flow = y_hat[:, 1:, :, :]

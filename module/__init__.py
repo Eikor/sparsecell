@@ -23,10 +23,10 @@ class NN(nn.Module):
         self.optimizer = optim.Adam(self.backbone.parameters(), lr=args.lr)
         print('Done.')
 
-    def train_step(self, batch):
+    def train_step(self, batch, args):
         imgs = batch['image'].to(device=torch.device('cuda'))
         gt = batch['label'].to(device=torch.device('cuda'))
-        loss = self.criterion(self.backbone(imgs), gt)
+        loss = self.criterion(self.backbone(imgs), gt, masked=args.maskunlabel)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -37,7 +37,7 @@ class NN(nn.Module):
         avg_loss = 0
         dataset = tqdm(dataset, desc=f'Epoch: {epoch+1}')
         for batch in dataset:
-            loss = self.train_step(batch)
+            loss = self.train_step(batch, args)
             avg_loss += loss / len(dataset)
             dataset.set_postfix({
                 'loss': '{0:1.5f}'.format(loss),

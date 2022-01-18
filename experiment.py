@@ -7,7 +7,7 @@ from args import describe
 import module
 
 #### save exp info ###
-args = describe('test')
+args = describe('train')
 
 ### prepare experiment Material ###
 net = module.NN(args).cuda()
@@ -17,8 +17,8 @@ if args.mode == 'train':
     wandb.init(dir=args.save_dir, config=args)
     train_set = dataset.load_train_dataset(args)
     val_set = dataset.load_val_dataset(args)
-    
-
+    #debug
+    # net.backbone.load_state_dict(torch.load('result/01_18_19_50_58/epoch_10.pth')['model_state_dict'])
     ### baseline ###
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     val_loader = DataLoader(val_set, batch_size=args.batch_size)

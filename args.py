@@ -5,7 +5,7 @@ import os
 def parse():
     parser = argparse.ArgumentParser()
     # training
-    parser.add_argument('--epochs', type=int, default=200, help='epochs for training')
+    parser.add_argument('--epochs', type=int, default=70, help='epochs for training')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for main task')
     parser.add_argument('--batch_size', type=int, default=12, help='batch size for training')
     parser.add_argument('--verbose', type=bool, default=True)
@@ -15,9 +15,11 @@ def parse():
     # net
     parser.add_argument('--num_channels', type=int, default=1)
     parser.add_argument('--num_classes', type=int, default=1)
+    parser.add_argument('--pose_loss', type=str, default='l1')
     parser.add_argument('--pose_alpha', type=float, default=1)
     parser.add_argument('--pose_beta', type=float, default=25)
     parser.add_argument('--consist', type=float, default=0.1)
+    parser.add_argument('--maskunlabel', type=bool, default=True)
     parser.add_argument('--neg_ratio', type=float, default=0.2)
     parser.add_argument('--pos_ratio', type=float, default=0.1)
 
