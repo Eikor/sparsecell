@@ -36,7 +36,7 @@ class PoseLoss(nn.Module):
             0 for unlabeled pixel, 50-50
             [-1, 0) for background
         '''
-        prob = torch.sigmoid(y_hat[:, 0, :, :]).clamp(min=1e-4, max=(1 - 1e-4))
+        prob = torch.sigmoid(y_hat[:, 0:1, :, :]).clamp(min=1e-4, max=(1 - 1e-4))
         flow = y_hat[:, 1:, :, :]
         weights = y[:, 0:1, :, :]
         gt_flow = y[:, 1:, :, :]
@@ -96,11 +96,11 @@ class FlowLoss(nn.Module):
     def __init__(self, args):
         super(FlowLoss, self).__init__()
         self.beta = args.pose_beta
-        self.l2 = nn.MSELoss(reduction='none')
+        self.l2 = nn.L1Loss(reduction='none')
    
     def forward(self, y_hat, y, reduce='mean'):
         flow = y_hat[:, 1:, :, :]
-        weights = y[:, 0, :, :]
+        weights = y[:, 0:1, :, :]
         gt_flow = y[:, 1:, :, :]
         
         pos_mask = weights == 1
