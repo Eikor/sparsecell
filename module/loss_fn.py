@@ -22,6 +22,8 @@ class PoseLoss(nn.Module):
         super(PoseLoss, self).__init__()
         self.alpha = args.pose_alpha
         self.beta = args.pose_beta
+        self.nonlinear_flow = args.nonlinear_flow
+        self.c = args.flow_c
         self.thresh = 0.5
         if args.pose_loss == 'l1':
             self.l2 = nn.L1Loss(reduction='none')
@@ -36,7 +38,7 @@ class PoseLoss(nn.Module):
             0 for unlabeled pixel, 50-50
             [-1, 0) for background
         '''
-        prob = torch.sigmoid(y_hat[:, 0, :, :]).clamp(min=1e-4, max=(1 - 1e-4))
+        prob = torch.sigmoid(y_hat[:, 0:1, :, :]).clamp(min=1e-4, max=(1 - 1e-4))
         flow = y_hat[:, 1:, :, :]
         weights = y[:, 0:1, :, :]
         gt_flow = y[:, 1:, :, :]
@@ -48,14 +50,18 @@ class PoseLoss(nn.Module):
         select_mask = pos_mask + neg_mask
 
         prob_loss = -torch.sum(torch.log(prob) * pos_mask + torch.log(1 - prob) * (neg_mask)) / torch.sum(select_mask)
-    
+        if self.nonlinear_flow:
+            flow_loss = self.l2(torch.tanh(self.c * flow), gt_flow)
+        else:
+            flow_loss = self.l2(flow, gt_flow)
+        
         if masked:
             if torch.sum(pos_mask) == 0:
-                flow_loss = torch.sum(self.l2(flow, gt_flow) * pos_mask)
+                flow_loss = torch.sum(flow_loss * pos_mask)
             else:
-                flow_loss = torch.sum(self.l2(flow, gt_flow) * pos_mask) / torch.sum(pos_mask)
+                flow_loss = torch.sum(flow_loss* pos_mask) / torch.sum(pos_mask)
         else:
-            flow_loss = torch.sum(self.l2(flow, gt_flow) * select_mask) / torch.sum(select_mask)
+            flow_loss = torch.sum(flow_loss * select_mask) / torch.sum(select_mask)
 
         return self.beta * flow_loss + self.alpha * prob_loss
     
@@ -96,11 +102,11 @@ class FlowLoss(nn.Module):
     def __init__(self, args):
         super(FlowLoss, self).__init__()
         self.beta = args.pose_beta
-        self.l2 = nn.MSELoss(reduction='none')
+        self.l2 = nn.L1Loss(reduction='none')
    
     def forward(self, y_hat, y, reduce='mean'):
         flow = y_hat[:, 1:, :, :]
-        weights = y[:, 0, :, :]
+        weights = y[:, 0:1, :, :]
         gt_flow = y[:, 1:, :, :]
         
         pos_mask = weights == 1

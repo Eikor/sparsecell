@@ -31,6 +31,8 @@ class Pose(Dataset):
         self.iou_thresh = 0.5
         self.pose_alpha = args.pose_alpha
         self.pose_beta = args.pose_beta
+        self.non_linear = args.nonlinear_flow
+        self.c = args.flow_c
         print('Done.')
         
 
@@ -83,7 +85,10 @@ class Pose(Dataset):
         annotations = []
         for prediction in tqdm(predictions, desc='Follow flows'):
             cell_prob = prediction[0].sigmoid().numpy()
-            dP = prediction[1:].cpu().numpy()
+            if self.non_linear:
+                dP = torch.tanh(self.c * prediction[1:]).cpu().numpy()
+            else:
+                dP = prediction[1:].cpu().numpy()
             if self.pose_alpha == 0:
                 p = pose_process.follow_flows(-dP, niter=200)
                 maski = pose_process.get_masks(p, iscell=None, flows=None, threshold=self.flow_threshold)
@@ -117,7 +122,10 @@ class Pose(Dataset):
                 ...
             ]
         '''
-        masks = self.label_to_annotation(prediction[0:100])[:, 1].astype(int)
+        if args.mode != 'test':
+            masks = self.label_to_annotation(prediction[0:100])[:, 1].astype(int)
+        else:
+            masks = self.label_to_annotation(prediction)[:, 1].astype(int)
         gt_masks = self.annotations[:, 1]
         print('calculate iou')
         stats = pose_process.metric(masks, gt_masks, self.iou_thresh)
@@ -150,7 +158,12 @@ class Pose(Dataset):
         image = self.images[index]
         label_url = os.path.join(self.label_url, f'{index}.npy')
         if os.path.exists(label_url):
-            label = np.load(label_url)
+            try:
+                label = np.load(label_url)
+            except:
+                print(index)
+                anno = self.annotations[index]
+                label = self.annotation_to_label([anno]).squeeze()
             if len(label.shape) == 4:
                 label = label[0]
         else:

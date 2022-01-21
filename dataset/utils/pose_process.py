@@ -7,6 +7,7 @@ from scipy.ndimage.morphology import binary_fill_holes
 from tqdm import trange
 from numba import njit, jit, float32, int32, vectorize
 from scipy.optimize import linear_sum_assignment
+import colorsys
 
 @jit(nopython=True)
 def _label_overlap(x, y):
@@ -563,6 +564,32 @@ def fill_holes_and_remove_small_masks(masks, min_size=15):
                 j+=1
     return masks
 
+def normalize99(img):
+    X = img.copy()
+    X = (X - np.percentile(X, 1)) / (np.percentile(X, 99) - np.percentile(X, 1))
+    return X
+
+def hsv_to_rgb(arr):
+    hsv_to_rgb_channels = np.vectorize(colorsys.hsv_to_rgb)
+    h, s, v = np.rollaxis(arr, axis=-1)
+    r, g, b = hsv_to_rgb_channels(h, s, v)
+    rgb = np.stack((r,g,b), axis=-1)
+    return rgb
+
+def dx_to_circ(dP):
+    """ dP is 2 x Y x X => 'optic' flow representation """
+    sc = max(np.percentile(dP[0], 99), np.percentile(dP[0], 1))
+    Y = np.clip(dP[0] / sc, -1, 1)
+    sc = max(np.percentile(dP[1], 99), np.percentile(dP[1], 1))
+    X = np.clip(dP[1] / sc, -1, 1)
+    H = (np.arctan2(Y, X) + np.pi) / (2*np.pi)
+    S = normalize99(dP[0]**2 + dP[1]**2)
+    V = np.ones_like(S)
+    HSV = np.concatenate((H[:,:,np.newaxis], S[:,:,np.newaxis], S[:,:,np.newaxis]), axis=-1)
+    HSV = np.clip(HSV, 0.0, 1.0)
+    flow = (hsv_to_rgb(HSV)*255).astype(np.uint8)
+    return flow
+
 def metric(preds:np.ndarray, gt:np.ndarray, thresh):
     '''
     Input: 
@@ -577,11 +604,20 @@ def metric(preds:np.ndarray, gt:np.ndarray, thresh):
         if len(np.unique(pred)) == 1:
             stats.append([0, 0, 0])
             continue
+        p_pred = (len(np.unique(pred))-1)
+        p_true = (len(np.unique(true)) -1)
         ious, assign = mask_ious(true, pred)
-        tp = np.sum(ious>thresh)
-        precision = tp / (len(np.unique(pred))-1)
-        recall = tp / (len(np.unique(true)) -1)
-        mean_error = np.mean(ious[ious>thresh])
-        stats.append([precision, recall, mean_error])
+
+        mAP = 0
+        for th in np.arange(0.5, 1, 0.05):
+            tp = np.sum(ious>th)
+            if np.abs(th - 0.5) < 0.001:
+                AP50 = tp / (p_pred + p_true - tp)
+            if np.abs(th - 0.75) < 0.001:
+                AP75 = tp / (p_pred + p_true - tp)
+            mAP += tp / (p_pred + p_true - tp)/10
+
+        # mean_error = np.mean(ious[ious>thresh]) if tp > 0 else 0
+        stats.append([AP50, AP75, mAP])
     
     return stats
