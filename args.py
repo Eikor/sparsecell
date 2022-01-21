@@ -9,7 +9,6 @@ def parse():
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for main task')
     parser.add_argument('--batch_size', type=int, default=12, help='batch size for training')
     parser.add_argument('--verbose', type=bool, default=True)
-    parser.add_argument('--iter', type=int, default=20)
     parser.add_argument('--save_interval', type=int, default=10)
     
     # net
@@ -17,9 +16,11 @@ def parse():
     parser.add_argument('--num_classes', type=int, default=1)
     parser.add_argument('--pose_loss', type=str, default='l1')
     parser.add_argument('--pose_alpha', type=float, default=1)
-    parser.add_argument('--pose_beta', type=float, default=25)
+    parser.add_argument('--pose_beta', type=float, default=5)
     parser.add_argument('--consist', type=float, default=0.1)
-    parser.add_argument('--maskunlabel', type=bool, default=True)
+    parser.add_argument('--maskunlabel', action='store_true')
+    parser.add_argument('--nonlinear_flow', action='store_true')
+    parser.add_argument('--flow_c', type=float, default=1)
     parser.add_argument('--neg_ratio', type=float, default=0.2)
     parser.add_argument('--pos_ratio', type=float, default=0.1)
 
@@ -36,13 +37,11 @@ def parse():
 
     
     ### test args
-    parser.add_argument('--pred_th', type=float, default=0.1)
-    parser.add_argument('--patience', type=float, default=5)
-    
+    parser.add_argument('--test_url', type=str, default=None)
 
     return parser.parse_args()
 
-def get_args():
+def get_args(mode):
     num_channels = {
         'livecell': 1,
         'tissuenet': 2,
@@ -50,6 +49,7 @@ def get_args():
     segmentation = ['pose']
     detection = ['point']
     args = parse()
+    args.mode = mode
 
     args.train_image_url = f'./dataset/data/{args.dataset}/train/train_images.npy'
     args.train_anno_url = f'./dataset/data/{args.dataset}/train/train_annotation_{args.anno_rate}.npz'
@@ -61,7 +61,6 @@ def get_args():
     args.val_anno_url = f'./dataset/data/{args.dataset}/val/val_annotation.npz'
     args.val_label_url = f'./dataset/data/{args.dataset}/val/{args.data_mode}_label'
     
-
     args.num_channels = num_channels[args.dataset]
     
     if args.data_mode in segmentation:
@@ -73,15 +72,20 @@ def get_args():
     else:
         pass
 
-    args.save_dir = 'result/' + time.strftime('%m_%d_%H_%M_%S',time.localtime(int(round(time.time()))))
+    if args.mode == 'test':
+        assert args.test_url is not None
+        args.save_dir = args.test_url
+        args.nn_path = os.path.join(args.save_dir, 'epoch_70.pth')
+    else:
+        args.save_dir = 'result/' + time.strftime('%m_%d_%H_%M_%S',time.localtime(int(round(time.time()))))
     try:
         os.makedirs(args.save_dir)
         print(f'save experiment result in {args.save_dir}')
     except:
-        pass
+        print(f'save experiment result in {args.save_dir}')
     return args
 
 def describe(mode):
-    args = get_args()
-    args.mode = mode
+    args = get_args(mode)
+    # args.mode = mode
     return args

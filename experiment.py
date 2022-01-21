@@ -25,14 +25,20 @@ if args.mode == 'train':
     for e in np.arange(args.epochs):
         net.train_epoch(train_loader, e, args)
         stats, masks = net.eval(val_loader, e, args)
-
+    
+    test_set = dataset.load_test_dataset(args)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size)
+    stats, masks = net.eval(test_loader, 0, args)
+    print(np.mean(stats, axis=0))
+    np.savetxt(args.save_dir+'/performance.txt', stats)
 ### test ###
 
 if args.mode == 'test':
     test_set = dataset.load_test_dataset(args)
     test_loader = DataLoader(test_set, batch_size=args.batch_size)
-    state_dict = torch.load('result/01_08_02_36_34/epoch_200.pth')
+    state_dict = torch.load(args.nn_path)
     net.backbone.load_state_dict(state_dict['model_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)
-    print(stats)
+    print(np.mean(stats, axis=0))
+    np.savetxt(args.save_dir+'/performance.txt', stats)
 
