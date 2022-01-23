@@ -1,10 +1,4 @@
-# Sparse cell
-### TODO(12.31)
-- [ ] store segment annotation in npz file
-- [ ]  
-
-
-# 3D cell
-### TODO(12.22)
-- [x] calculate IoU
+# Nonlinearflow
+- [] check the tanh will make the boundary more smooth.
+  - [] plot the networks' output before the activation of tanh.
 
