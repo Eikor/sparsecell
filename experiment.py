@@ -7,7 +7,7 @@ from args import describe
 import module
 
 #### save exp info ###
-args = describe('test')
+args = describe('train')
 
 ### prepare experiment Material ###
 net = module.NN(args).cuda()

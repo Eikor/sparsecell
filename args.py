@@ -23,6 +23,11 @@ def parse():
     parser.add_argument('--flow_c', type=float, default=1)
     parser.add_argument('--neg_ratio', type=float, default=0.2)
     parser.add_argument('--pos_ratio', type=float, default=0.1)
+    parser.add_argument('--curriculum_smooth', action='store_true')
+    parser.add_argument('--std', default=1, type=float)
+    parser.add_argument('--std_factor', default=0.9, type=float)
+    parser.add_argument('--cs_epoch', default=5, type=int)
+    parser.add_argument('--cs_kernel_size', default=3, type=int)
 
 
 

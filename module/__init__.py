@@ -15,7 +15,7 @@ class NN(nn.Module):
     def __init__(self, args):
         super(NN, self).__init__()
         print('build networks')
-        self.backbone = unet.UNet(args.num_channels, args.num_classes)
+        self.backbone = unet.UNet(args.num_channels, args.num_classes, smooth=args.curriculum_smooth)
         if args.data_mode =='point':
             self.criterion = loss_fn.PointLoss(args)
         elif args.data_mode =='pose':
@@ -34,6 +34,12 @@ class NN(nn.Module):
 
     def train_epoch(self, dataset, epoch, args):
         self.backbone.train()
+        if args.curriculum_smooth:
+            if epoch % args.cs_epoch == 0:
+                kernel_size = args.cs_kernel_size
+                std = args.std * pow(args.std_factor, epoch // args.cs_epoch)
+                self.backbone.update_kernels(kernel_size, std)
+        
         avg_loss = 0
         dataset = tqdm(dataset, desc=f'Epoch: {epoch+1}')
         for batch in dataset:
