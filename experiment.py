@@ -7,11 +7,42 @@ from args import describe
 import module
 
 #### save exp info ###
-args = describe('train')
+args = describe('test')
 
 ### prepare experiment Material ###
 net = module.NN(args).cuda()
 
+# def fft(label_url):
+# label_url = ''
+# import os
+# import matplotlib.pyplot as plt
+# fft_flows = []
+# fft_sum = []
+# fft_highpass = []
+# H = np.zeros_like(fft_flows[0])
+# ij = np.stack(np.meshgrid(range(704), range(520)))
+# ctr = np.array([260, 352])
+# dist = np.linalg.norm(ij - ctr.reshape((2, 1, 1)), axis=0)
+# R = 20
+# H = dist > R
+# for label in range(len(os.listdir(label_url))):
+#     flow = np.load(os.path.join(label_url, f'{label}.npy'))
+#     if len(flow.shape) > 3:
+#         flow = flow[0]
+#     fft_flow = np.fft.fftshift(np.fft.fft2(flow[1]))
+#     fft_flow = np.log(np.abs(fft_flow)**2)
+#     fft_sum.append(np.sum(fft_flow))
+#     fft_highpass.append(np.sum(fft_flow*H))
+#     fft_flows.append(fft_flow)
+#     # plt.imshow(fft_flow)
+#     # plt.savefig(f'fft/{label}.png')
+# fft_highpass = np.array([np.sum(fft_flow*H)/np.sum(H) for fft_flow in fft_flows])
+# plt.plot(fft_highpass[worst_case][10:])
+
+
+
+
+    
 
 if args.mode == 'train':
     wandb.init(dir=args.save_dir, config=args)
@@ -41,4 +72,4 @@ if args.mode == 'test':
     stats, masks = net.eval(test_loader, 0, args)
     print(np.mean(stats, axis=0))
     np.savetxt(args.save_dir+'/performance.txt', stats)
-
+    worst_case = np.argsort(stats[:, -1])

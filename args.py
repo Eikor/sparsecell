@@ -75,7 +75,7 @@ def get_args(mode):
     if args.mode == 'test':
         assert args.test_url is not None
         args.save_dir = args.test_url
-        args.nn_path = os.path.join(args.save_dir, 'epoch_70.pth')
+        args.nn_path = os.path.join(args.save_dir, 'epoch_100.pth')
     else:
         args.save_dir = 'result/' + time.strftime('%m_%d_%H_%M_%S',time.localtime(int(round(time.time()))))
     try:
