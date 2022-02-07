@@ -5,7 +5,7 @@ import os
 def parse():
     parser = argparse.ArgumentParser()
     # training
-    parser.add_argument('--epochs', type=int, default=70, help='epochs for training')
+    parser.add_argument('--epochs', type=int, default=100, help='epochs for training')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for main task')
     parser.add_argument('--batch_size', type=int, default=12, help='batch size for training')
     parser.add_argument('--verbose', type=bool, default=True)
