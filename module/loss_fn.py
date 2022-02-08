@@ -163,3 +163,46 @@ class SuperLoss(nn.Module):
         sigma = sigma.real.astype(np.float32)
         sigma = torch.from_numpy(sigma).cuda()
         return sigma
+
+class SoftPoseLoss(nn.Module):
+    def __init__(self, args):
+        super(SoftPoseLoss, self).__init__()
+        self.alpha = args.pose_alpha
+        self.beta = args.pose_beta
+        self.nonlinear_flow = args.nonlinear_flow
+        self.c = args.flow_c
+        self.thresh = 0.5
+        self.soft_mask = args.soft_mask
+        if args.pose_loss == 'l1':
+            self.l2 = nn.L1Loss(reduction='none')
+        else:
+            self.l2 = nn.MSELoss(reduction='none')
+   
+    def forward(self, y_hat, y, reduction='sum', masked=False):
+        '''
+            y: tensor with shape [b*4*H*W]
+                [
+                    [point, boundary, vflow, hflow]
+                    ...
+                ]
+        '''
+        center = y_hat[:, 0:1, :, :]
+        boundary = y_hat[:, 1:2, :, :]
+        flow = y_hat[:, 2:, :, :]
+        gt_center = y[:, 0:1, :, :]
+        gt_boundary = y[:, 1:2, :, :]
+        gt_flow = y[:, 2:, :, :]
+        
+        center_loss = self.l2(center, gt_center)
+        boundary_loss = self.l2(boundary, gt_boundary)
+        
+        soft_mask = 1 - gt_center - gt_boundary
+        if self.nonlinear_flow:
+            flow_loss = self.l2(torch.tanh(self.c * flow), gt_flow)
+        else:
+            flow_loss = self.l2(flow, gt_flow)
+        
+        if self.soft_mask:
+            flow_loss = flow_loss * soft_mask
+
+        return torch.mean(center_loss + boundary_loss + flow_loss)

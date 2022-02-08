@@ -51,7 +51,7 @@ def get_args(mode):
         'livecell': 1,
         'tissuenet': 2,
     }
-    segmentation = ['pose']
+    segmentation = ['pose', 'softpose']
     detection = ['point']
     args = parse()
     args.mode = mode
@@ -72,6 +72,8 @@ def get_args(mode):
         print(f'using {args.data_mode} to segment {args.dataset}')
         if args.data_mode == 'pose':
             args.num_classes = 3
+        if args.data_mode =='softpose':
+            args.num_classes = 4
     elif args.data_mode in detection:
         print(f'using {args.data_mode} to detect {args.dataset}')
     else:

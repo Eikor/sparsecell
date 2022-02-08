@@ -4,7 +4,8 @@ from torch.utils.data import DataLoader, random_split
 
 data_mode = {
     'point': detect.point,
-    'pose': segment.Pose 
+    'pose': segment.Pose,
+    'softpose': segment.SoftPose 
 }
 
 def load_train_dataset(args):

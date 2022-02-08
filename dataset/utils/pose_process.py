@@ -8,6 +8,7 @@ from tqdm import trange
 from numba import njit, jit, float32, int32, vectorize
 from scipy.optimize import linear_sum_assignment
 import colorsys
+import cv2
 
 @jit(nopython=True)
 def _label_overlap(x, y):
@@ -257,7 +258,7 @@ def masks_to_flows(masks):
     Ly, Lx = masks.shape
     mu = np.zeros((2, Ly, Lx), np.float64)
     mu_c = np.zeros((Ly, Lx), np.float64)
-    
+    mu_b = np.zeros((Ly, Lx), np.float64)
     nmask = masks.max()
     slices = scipy.ndimage.find_objects(masks)
     dia = diameters(masks)[0]
@@ -266,7 +267,9 @@ def masks_to_flows(masks):
         if si is not None:
             sr,sc = si
             ly, lx = sr.stop - sr.start + 1, sc.stop - sc.start + 1
-            y,x = np.nonzero(masks[sr, sc] == (i+1))
+            mask = (masks[sr, sc] == (i+1)).astype(np.uint8)
+            
+            y,x = np.nonzero(mask)
             y = y.astype(np.int32) + 1
             x = x.astype(np.int32) + 1
             ymed = np.median(y)
@@ -276,7 +279,20 @@ def masks_to_flows(masks):
             ymed = y[imin]
 
             d2 = (x-xmed)**2 + (y-ymed)**2
-            mu_c[sr.start+y-1, sc.start+x-1] = np.exp(-d2/s2)
+            mu_c[sr.start+ymed-1, sc.start+xmed-1] = 1
+            
+            T = np.zeros(((ly+3), (lx+3)), np.float64)
+            contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            pvc, pvr = np.concatenate(contours[0], axis=0).squeeze().T            
+            vr, vc = pvr + sr.start, pvc + sc.start 
+            T[pvr+2, pvc+2] = 1
+            T = cv2.GaussianBlur(T, (5, 5), 1.5)
+            tri, tci = np.where(T>0)
+            bri, bci = tri+sr.start-2, tci+sc.start-2
+            m = np.logical_and(np.logical_and(bri>=0, bri<masks.shape[0]), np.logical_and(bci>=0, bci<masks.shape[1]))
+            bri, bci = bri[m], bci[m]
+            tri, tci = tri[m], tci[m]
+            mu_b[bri, bci] = np.maximum(mu_b[bri, bci], T[tri, tci])
 
             niter = 2*np.int32(np.ptp(x) + np.ptp(y))
             T = np.zeros((ly+2)*(lx+2), np.float64)
@@ -289,7 +305,7 @@ def masks_to_flows(masks):
 
     mu /= (1e-20 + (mu**2).sum(axis=0)**0.5)
 
-    return mu, mu_c
+    return mu, (mu_c, mu_b)
 
 @njit('(float32[:,:,:], float32[:,:,:], int32[:,:], int32)', nogil=True)
 def steps2D(p, dP, inds, niter):
