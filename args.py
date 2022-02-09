@@ -28,7 +28,7 @@ def parse():
     parser.add_argument('--std_factor', default=0.9, type=float)
     parser.add_argument('--cs_epoch', default=5, type=int)
     parser.add_argument('--cs_kernel_size', default=3, type=int)
-    parser.add_argument('--soft_mask', action='store_true')
+
 
 
     # save dir
