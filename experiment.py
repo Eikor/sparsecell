@@ -55,8 +55,8 @@ if args.mode == 'train':
     #debug
     # net.backbone.load_state_dict(torch.load('result/01_18_19_50_58/epoch_10.pth')['model_state_dict'])
     ### baseline ###
-    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
-    val_loader = DataLoader(val_set, batch_size=args.batch_size)
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, num_workers=4, shuffle=True)
+    val_loader = DataLoader(val_set, num_workers=4, batch_size=args.batch_size)
     for e in np.arange(args.epochs):
         net.train_epoch(train_loader, e, args)
         stats, masks = net.eval(val_loader, e, args)

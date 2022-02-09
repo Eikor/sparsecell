@@ -110,7 +110,7 @@ class SoftPose(nn.Module):
             avg_loss += loss[3].item() / len(dataset)
             outputs.append(pred.cpu())
             dataset.set_postfix({
-                'loss': '{0:1.5f}'.format(loss.item())
+                'loss': '{0:1.5f}'.format(loss[3].item())
                 })
             if verbose_flag:
                 verbose_img = imgs[0]

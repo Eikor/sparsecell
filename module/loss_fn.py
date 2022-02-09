@@ -174,7 +174,7 @@ class SoftPoseLoss(nn.Module):
         self.c = args.flow_c
         self.thresh = 0.5
         self.soft_mask = args.soft_mask
-        self.main = nn.L1Loss(reduction='mean')
+        self.main = nn.L1Loss(reduction='none')
         self.aux = nn.MSELoss(reduction='mean')
    
     def forward(self, y_hat, y, reduction='sum', masked=False):
@@ -204,5 +204,5 @@ class SoftPoseLoss(nn.Module):
         if self.soft_mask:
             flow_loss = flow_loss * soft_mask
 
-        sum_loss = self.a*center_loss + self.b*boundary_loss + self.c*flow_loss
-        return [center_loss, boundary_loss, flow_loss, sum_loss]
+        sum_loss = self.a*center_loss + self.b*boundary_loss + self.c*torch.mean(flow_loss)
+        return [center_loss, boundary_loss, torch.mean(flow_loss), sum_loss]
