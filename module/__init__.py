@@ -20,6 +20,8 @@ class NN(nn.Module):
             self.criterion = loss_fn.PointLoss(args)
         elif args.data_mode =='pose':
             self.criterion = loss_fn.PoseLoss(args)
+        elif args.data_mode =='softpose':
+            self.criterion = loss_fn.SoftPoseLoss(args)
         self.optimizer = optim.Adam(self.backbone.parameters(), lr=args.lr)
         print('Done.')
 

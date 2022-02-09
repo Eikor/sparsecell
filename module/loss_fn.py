@@ -196,7 +196,7 @@ class SoftPoseLoss(nn.Module):
         center_loss = self.l2(center, gt_center)
         boundary_loss = self.l2(boundary, gt_boundary)
         
-        soft_mask = 1 - gt_center - gt_boundary
+        soft_mask = torch.clamp(1 - gt_center - gt_boundary, min=0, max=1)
         if self.nonlinear_flow:
             flow_loss = self.l2(torch.tanh(self.c * flow), gt_flow)
         else:
