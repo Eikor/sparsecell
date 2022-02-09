@@ -259,17 +259,20 @@ class SoftPose(Dataset):
         '''
         annotations = []
         for prediction in tqdm(predictions, desc='Follow flows'):
+            '''
+            cell_prob
+            '''
             cell_prob = prediction[0].sigmoid().numpy()
             if self.non_linear:
                 dP = torch.tanh(self.c * prediction[1:]).cpu().numpy()
             else:
                 dP = prediction[1:].cpu().numpy()
-            if self.pose_alpha == 0:
-                p = pose_process.follow_flows(-dP, niter=200)
-                maski = pose_process.get_masks(p, iscell=None, flows=None, threshold=self.flow_threshold)
-            else:
-                p = pose_process.follow_flows(-dP * (cell_prob), niter=200)
-                maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
+            # if self.pose_alpha == 0:
+            p = pose_process.follow_flows(-dP, niter=200)
+            maski = pose_process.get_masks(p, iscell=None, flows=None, threshold=self.flow_threshold)
+            # else:
+            #     p = pose_process.follow_flows(-dP * (cell_prob), niter=200)
+            #     maski = pose_process.get_masks(p, iscell=(cell_prob > self.cellprob_thresh),flows=dP, threshold=self.flow_threshold)
             maski = pose_process.fill_holes_and_remove_small_masks(maski)
             annotations.append(np.stack([cell_prob, maski]))
         return np.array(annotations)
@@ -297,10 +300,10 @@ class SoftPose(Dataset):
                 ...
             ]
         '''
-        if args.mode != 'test':
-            masks = self.label_to_annotation(prediction[0:100])[:, 1].astype(int)
-        else:
-            masks = self.label_to_annotation(prediction)[:, 1].astype(int)
+        # if args.mode != 'test':
+        #     masks = self.label_to_annotation(prediction[0:100])[:, 1].astype(int)
+        # else:
+        masks = self.label_to_annotation(prediction)[:, 1].astype(int)
         gt_masks = self.annotations[:, 1]
         print('calculate iou')
         stats = pose_process.metric(masks, gt_masks, self.iou_thresh)
