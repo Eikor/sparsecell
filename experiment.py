@@ -11,7 +11,7 @@ import module.softpose as softpose
 args = describe('train')
 
 ### prepare experiment Material ###
-if args.data_mode =='soft_pose':
+if args.data_mode =='softpose':
     net = softpose.SoftPose(args).cuda()
 else:
     net = module.NN(args).cuda()
@@ -61,11 +61,11 @@ if args.mode == 'train':
         net.train_epoch(train_loader, e, args)
         stats, masks = net.eval(val_loader, e, args)
     
-    test_set = dataset.load_test_dataset(args)
-    test_loader = DataLoader(test_set, batch_size=args.batch_size)
-    stats, masks = net.eval(test_loader, 0, args)
-    print(np.mean(stats, axis=0))
-    np.savetxt(args.save_dir+'/performance.txt', stats)
+    # test_set = dataset.load_test_dataset(args)
+    # test_loader = DataLoader(test_set, batch_size=args.batch_size)
+    # stats, masks = net.eval(test_loader, 0, args)
+    # print(np.mean(stats, axis=0))
+    # np.savetxt(args.save_dir+'/performance.txt', stats)
 ### test ###
 
 if args.mode == 'test':

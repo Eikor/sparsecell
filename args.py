@@ -7,7 +7,7 @@ def parse():
     # training
     parser.add_argument('--epochs', type=int, default=100, help='epochs for training')
     parser.add_argument('--lr', type=float, default=1e-4, help='learning rate for main task')
-    parser.add_argument('--batch_size', type=int, default=12, help='batch size for training')
+    parser.add_argument('--batch_size', type=int, default=24, help='batch size for training')
     parser.add_argument('--verbose', type=bool, default=True)
     parser.add_argument('--save_interval', type=int, default=10)
     
@@ -29,7 +29,7 @@ def parse():
     parser.add_argument('--cs_epoch', default=5, type=int)
     parser.add_argument('--cs_kernel_size', default=3, type=int)
     parser.add_argument('--soft_mask', action='store_true')
-    parser.add_argument('--soft_a', default=10, type=float)
+    parser.add_argument('--soft_a', default=20, type=float)
     parser.add_argument('--soft_b', default=1, type=float)
     parser.add_argument('--soft_c', default=1, type=float)
 
