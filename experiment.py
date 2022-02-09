@@ -5,12 +5,16 @@ import numpy as np
 import dataset
 from args import describe
 import module
+import module.softpose as softpose
 
 #### save exp info ###
 args = describe('train')
 
 ### prepare experiment Material ###
-net = module.NN(args).cuda()
+if args.data_mode =='soft_pose':
+    net = softpose.SoftPose(args).cuda()
+else:
+    net = module.NN(args).cuda()
 
 # def fft(label_url):
 # label_url = ''

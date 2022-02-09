@@ -29,7 +29,9 @@ def parse():
     parser.add_argument('--cs_epoch', default=5, type=int)
     parser.add_argument('--cs_kernel_size', default=3, type=int)
     parser.add_argument('--soft_mask', action='store_true')
-
+    parser.add_argument('--soft_a', default=10, type=float)
+    parser.add_argument('--soft_b', default=1, type=float)
+    parser.add_argument('--soft_c', default=1, type=float)
 
     # save dir
     parser.add_argument('--save_dir', type=str, default='./result', help='directory to save record file')
