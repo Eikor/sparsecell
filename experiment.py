@@ -15,37 +15,6 @@ if args.data_mode =='softpose':
     net = softpose.SoftPose(args).cuda()
 else:
     net = module.NN(args).cuda()
-
-# def fft(label_url):
-# label_url = ''
-# import os
-# import matplotlib.pyplot as plt
-# fft_flows = []
-# fft_sum = []
-# fft_highpass = []
-# H = np.zeros_like(fft_flows[0])
-# ij = np.stack(np.meshgrid(range(704), range(520)))
-# ctr = np.array([260, 352])
-# dist = np.linalg.norm(ij - ctr.reshape((2, 1, 1)), axis=0)
-# R = 20
-# H = dist > R
-# for label in range(len(os.listdir(label_url))):
-#     flow = np.load(os.path.join(label_url, f'{label}.npy'))
-#     if len(flow.shape) > 3:
-#         flow = flow[0]
-#     fft_flow = np.fft.fftshift(np.fft.fft2(flow[1]))
-#     fft_flow = np.log(np.abs(fft_flow)**2)
-#     fft_sum.append(np.sum(fft_flow))
-#     fft_highpass.append(np.sum(fft_flow*H))
-#     fft_flows.append(fft_flow)
-#     # plt.imshow(fft_flow)
-#     # plt.savefig(f'fft/{label}.png')
-# fft_highpass = np.array([np.sum(fft_flow*H)/np.sum(H) for fft_flow in fft_flows])
-# plt.plot(fft_highpass[worst_case][10:])
-
-
-
-
     
 
 if args.mode == 'train':
@@ -70,7 +39,7 @@ if args.mode == 'train':
 
 if args.mode == 'test':
     test_set = dataset.load_test_dataset(args)
-    test_loader = DataLoader(test_set, batch_size=1)
+    test_loader = DataLoader(test_set, batch_size=args.batch_size)
     state_dict = torch.load(args.nn_path)
     net.backbone.load_state_dict(state_dict['model_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)
