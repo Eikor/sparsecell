@@ -8,7 +8,7 @@ import module
 import module.softpose as softpose
 
 #### save exp info ###
-args = describe('train')
+args = describe('test')
 
 ### prepare experiment Material ###
 if args.data_mode =='softpose':
@@ -70,7 +70,7 @@ if args.mode == 'train':
 
 if args.mode == 'test':
     test_set = dataset.load_test_dataset(args)
-    test_loader = DataLoader(test_set, batch_size=args.batch_size)
+    test_loader = DataLoader(test_set, batch_size=1)
     state_dict = torch.load(args.nn_path)
     net.backbone.load_state_dict(state_dict['model_state_dict'])
     stats, masks = net.eval(test_loader, 0, args)

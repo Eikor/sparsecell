@@ -167,9 +167,9 @@ class SuperLoss(nn.Module):
 class SoftPoseLoss(nn.Module):
     def __init__(self, args):
         super(SoftPoseLoss, self).__init__()
-        self.a = args.soft_a
-        self.b = args.soft_b
-        self.c = args.soft_c
+        self.soft_a = args.soft_a
+        self.soft_b = args.soft_b
+        self.soft_c = args.soft_c
         self.nonlinear_flow = args.nonlinear_flow
         self.c = args.flow_c
         self.thresh = 0.5
@@ -196,13 +196,16 @@ class SoftPoseLoss(nn.Module):
         boundary_loss = self.aux(boundary, gt_boundary)
         
         soft_mask = torch.clamp(1 - gt_center - gt_boundary, min=0, max=1)
-        if self.nonlinear_flow:
-            flow_loss = self.main(torch.tanh(self.c * flow), gt_flow)
+        if self.soft_c != 0:
+            if self.nonlinear_flow:
+                flow_loss = self.main(torch.tanh(self.c * flow), gt_flow)
+            else:
+                flow_loss = self.main(flow, gt_flow)
+            
+            if self.soft_mask:
+                flow_loss = flow_loss * soft_mask
         else:
-            flow_loss = self.main(flow, gt_flow)
-        
-        if self.soft_mask:
-            flow_loss = flow_loss * soft_mask
+            flow_loss = torch.tensor(0.0)
 
-        sum_loss = self.a*center_loss + self.b*boundary_loss + self.c*torch.mean(flow_loss)
+        sum_loss = self.soft_a*center_loss + self.soft_b*boundary_loss + self.soft_c*torch.mean(flow_loss)
         return [center_loss, boundary_loss, torch.mean(flow_loss), sum_loss]

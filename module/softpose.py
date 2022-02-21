@@ -86,9 +86,9 @@ class SoftPose(nn.Module):
             cv2.imwrite(verbose_url+'/input.jpg', verbose_img)
         
         canvas = verbose_img
-        canvas[mask>0, 0] = 255
+        canvas[mask>0.3, 2] = 255
         # save mask
-        output = cv2.addWeighted(verbose_img, 0.8, canvas, 0.2, 1)
+        output = cv2.addWeighted(verbose_img, 0.7, canvas, 0.3, 1)
         cv2.imwrite(verbose_url+f'/epoch_{epoch+1}.jpg', output)
 
     @torch.no_grad()
@@ -119,21 +119,26 @@ class SoftPose(nn.Module):
         
         if not args.mode == 'test':
             if args.verbose:
-                mask = dataset.iterable.dataset.label_to_annotation(outputs[0:1])[:, 1].astype(int)
+                if args.soft_c == 0:
+                    mask = outputs[0, 0].cpu().numpy()
+                    # mask[mask>0.5] = 1
+                else:
+                    mask = dataset.iterable.dataset.label_to_annotation(outputs[0:1])[:, 1].astype(int)
                 self.verbose(verbose_img, mask, epoch, args)
             wandb.log({'eval loss': avg_loss})
             if (epoch+1) % args.save_interval == 0:
                 torch.save({
                     'model_state_dict': self.backbone.state_dict(),
                     'optimizer_state_dict': self.optimizer.state_dict(),
-                    }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth'))  
-                metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
-                metric_mean = np.mean(metric, axis=0)
-                wandb.log({
-                    'val AP50': metric_mean[0],
-                    'val AP75': metric_mean[1],
-                    'val mAP': metric_mean[2]
-                    })
+                    }, os.path.join(args.save_dir, f'epoch_{epoch+1}.pth')) 
+                if args.soft_c != 0: 
+                    metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
+                    metric_mean = np.mean(metric, axis=0)
+                    wandb.log({
+                        'val AP50': metric_mean[0],
+                        'val AP75': metric_mean[1],
+                        'val mAP': metric_mean[2]
+                        })
         else:
             metric, masks = dataset.iterable.dataset.metric(outputs, args, verbose=True)
         

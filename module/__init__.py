@@ -15,7 +15,7 @@ class NN(nn.Module):
     def __init__(self, args):
         super(NN, self).__init__()
         print('build networks')
-        self.backbone = unet.UNet(args.num_channels, args.num_classes, smooth=args.curriculum_smooth)
+        self.backbone = unet.UNet(args.num_channels, args.num_classes)
         if args.data_mode =='point':
             self.criterion = loss_fn.PointLoss(args)
         elif args.data_mode =='pose':
@@ -100,10 +100,23 @@ class NN(nn.Module):
             verbose_flag = True
         
         dataset = tqdm(dataset, desc=f'Eval Epoch: {epoch+1}')
+        i = 0
+        import matplotlib.pyplot as plt
         for batch in dataset:
             imgs = batch['image'].to(device=torch.device('cuda'))
             gt = batch['label'].to(device=torch.device('cuda'))
             pred = self.backbone(imgs)
+            #####
+            # plt.figure(figsize=(16, 6), dpi=200)
+            # plt.subplot(1, 2, 1)
+            # plt.imshow(torch.tanh(0.2*pred[0, 1]).cpu(), cmap='seismic')
+            # plt.subplot(1, 2, 2)
+            # plt.imshow(gt[0, 1].cpu(), cmap='seismic')
+            # pred_url = args.save_dir + '/pred'
+            # os.makedirs(pred_url, exist_ok=True)
+            # plt.savefig(pred_url+f'/{i}.png')
+            # i += 1
+
             loss = self.criterion(pred, gt)
             avg_loss += loss.item() / len(dataset)
             outputs.append(pred.cpu())
